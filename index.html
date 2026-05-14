@@ -1,1526 +1,582 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NEXUS AI — Супер Интеллект</title>
-<style>
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-
-:root {
-  --bg: #09090b;
-  --surface: #111114;
-  --surface2: #18181b;
-  --surface3: #1e1e22;
-  --border: rgba(255,255,255,0.06);
-  --border-hover: rgba(255,255,255,0.12);
-  --text: #fafafa;
-  --text-dim: #a1a1aa;
-  --text-muted: #52525b;
-  --accent: #8b5cf6;
-  --accent2: #06b6d4;
-  --accent3: #f43f5e;
-  --green: #10b981;
-  --yellow: #eab308;
-  --radius: 12px;
-  --radius-lg: 20px;
-  --glow: 0 0 40px rgba(139,92,246,0.15);
-}
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  height: 100vh;
-  overflow: hidden;
-  display: flex;
-}
-
-/* ===== BACKGROUND ===== */
-#bg-canvas {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
-
-/* ===== SIDEBAR ===== */
-.sidebar {
-  width: 280px;
-  min-width: 280px;
-  background: var(--surface);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  z-index: 10;
-  position: relative;
-}
-
-.sidebar-top {
-  padding: 20px 16px;
-  border-bottom: 1px solid var(--border);
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.brand-icon {
-  width: 38px;
-  height: 38px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-.brand-icon::after {
-  content: '';
-  position: absolute;
-  inset: -3px;
-  border-radius: 13px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  opacity: 0.2;
-  filter: blur(8px);
-}
-
-.brand-icon svg { width: 20px; height: 20px; fill: white; position: relative; z-index: 1; }
-
-.brand-name {
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  background: linear-gradient(135deg, #fff 30%, var(--accent2));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.brand-tag {
-  font-size: 9px;
-  font-weight: 700;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: white;
-  padding: 2px 7px;
-  border-radius: 20px;
-  margin-left: auto;
-  letter-spacing: 0.5px;
-}
-
-.btn-new {
-  width: 100%;
-  height: 42px;
-  background: linear-gradient(135deg, var(--accent), #7c3aed);
-  border: none;
-  border-radius: 10px;
-  color: white;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.2s;
-  font-family: inherit;
-}
-
-.btn-new:hover { transform: translateY(-1px); box-shadow: var(--glow); }
-.btn-new:active { transform: scale(0.98); }
-
-.chat-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px 8px;
-}
-
-.chat-list::-webkit-scrollbar { width: 3px; }
-.chat-list::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
-
-.chat-item {
-  padding: 10px 12px;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.15s;
-  margin-bottom: 2px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  position: relative;
-}
-
-.chat-item:hover { background: var(--surface2); }
-.chat-item.active { background: var(--surface3); }
-
-.chat-item.active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 20px;
-  background: var(--accent);
-  border-radius: 0 3px 3px 0;
-}
-
-.chat-item-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: var(--surface3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  flex-shrink: 0;
-}
-
-.chat-item-text {
-  font-size: 12px;
-  color: var(--text-dim);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 1;
-}
-
-.chat-item.active .chat-item-text { color: var(--text); }
-
-.sidebar-bottom {
-  padding: 12px 16px;
-  border-top: 1px solid var(--border);
-}
-
-.user-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.user-row:hover { background: var(--surface2); }
-
-.user-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--green), var(--accent2));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 13px;
-  color: #000;
-  flex-shrink: 0;
-}
-
-.user-info { flex: 1; min-width: 0; }
-.user-name { font-size: 13px; font-weight: 600; }
-.user-plan { font-size: 11px; color: var(--accent); }
-
-/* ===== MAIN ===== */
-.main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  z-index: 1;
-  min-width: 0;
-}
-
-/* Header */
-.header {
-  height: 56px;
-  min-height: 56px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  background: rgba(9,9,11,0.8);
-  backdrop-filter: blur(12px);
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.model-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 14px 6px 10px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.model-btn:hover { border-color: var(--border-hover); }
-
-.model-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 8px var(--green);
-  animation: pulse-dot 2s ease-in-out infinite;
-}
-
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.model-label { font-size: 13px; font-weight: 600; }
-.model-chevron { font-size: 10px; color: var(--text-muted); }
-
-.header-right { display: flex; gap: 4px; }
-
-.hdr-btn {
-  width: 36px;
-  height: 36px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  color: var(--text-muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-  font-size: 16px;
-}
-
-.hdr-btn:hover { background: var(--surface2); color: var(--text); border-color: var(--border); }
-
-/* Chat area */
-.chat-scroll {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0;
-}
-
-.chat-scroll::-webkit-scrollbar { width: 5px; }
-.chat-scroll::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
-
-/* Welcome */
-.welcome {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  padding: 40px 24px;
-  text-align: center;
-}
-
-.welcome-orb-wrap {
-  position: relative;
-  margin-bottom: 28px;
-}
-
-.welcome-orb {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 36px;
-  position: relative;
-  z-index: 2;
-  animation: float 4s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-
-.orb-ring {
-  position: absolute;
-  border-radius: 50%;
-  border: 1px solid rgba(139,92,246,0.15);
-  animation: ring-pulse 3s ease-in-out infinite;
-}
-
-.orb-ring:nth-child(2) { inset: -14px; animation-delay: 0s; }
-.orb-ring:nth-child(3) { inset: -28px; animation-delay: 0.5s; border-color: rgba(6,182,212,0.1); }
-.orb-ring:nth-child(4) { inset: -42px; animation-delay: 1s; border-color: rgba(139,92,246,0.06); }
-
-@keyframes ring-pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.05); opacity: 0.5; }
-}
-
-.welcome-title {
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  margin-bottom: 8px;
-  background: linear-gradient(135deg, #fff 20%, var(--accent2));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.welcome-sub {
-  font-size: 14px;
-  color: var(--text-dim);
-  max-width: 460px;
-  line-height: 1.6;
-  margin-bottom: 36px;
-}
-
-.suggestions {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  max-width: 600px;
-  width: 100%;
-}
-
-.suggest-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-align: left;
-}
-
-.suggest-card:hover {
-  border-color: var(--accent);
-  transform: translateY(-2px);
-  box-shadow: var(--glow);
-}
-
-.suggest-icon { font-size: 22px; margin-bottom: 8px; }
-.suggest-title { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
-.suggest-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
-
-/* Messages */
-.msg-wrap {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 24px 24px;
-}
-
-.msg {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
-  animation: msg-in 0.35s ease-out;
-}
-
-@keyframes msg-in {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.msg-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-size: 15px;
-  margin-top: 2px;
-}
-
-.msg.user .msg-avatar {
-  background: linear-gradient(135deg, var(--green), var(--accent2));
-  color: #000;
-  font-weight: 700;
-  font-size: 13px;
-}
-
-.msg.ai .msg-avatar {
-  background: linear-gradient(135deg, var(--accent), #7c3aed);
-}
-
-.msg-body { flex: 1; min-width: 0; }
-
-.msg-top {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-
-.msg-sender { font-size: 12px; font-weight: 700; }
-.msg.ai .msg-sender { color: var(--accent); }
-.msg.user .msg-sender { color: var(--green); }
-.msg-time { font-size: 10px; color: var(--text-muted); }
-
-.msg-text {
-  font-size: 14px;
-  line-height: 1.7;
-  color: var(--text);
-}
-
-.msg-text p { margin-bottom: 10px; }
-.msg-text p:last-child { margin-bottom: 0; }
-.msg-text ul, .msg-text ol { padding-left: 20px; margin: 8px 0; }
-.msg-text li { margin-bottom: 4px; }
-.msg-text strong { color: var(--accent); font-weight: 600; }
-.msg-text em { color: var(--accent2); font-style: italic; }
-
-.msg-text h3 {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--accent);
-  margin: 16px 0 8px;
-}
-
-.msg-text pre {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px 16px;
-  margin: 10px 0;
-  overflow-x: auto;
-  font-size: 13px;
-  line-height: 1.6;
-  font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
-}
-
-.msg-text code {
-  background: var(--surface3);
-  padding: 2px 6px;
-  border-radius: 5px;
-  font-size: 12px;
-  font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
-}
-
-.msg-actions {
-  display: flex;
-  gap: 4px;
-  margin-top: 10px;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.msg:hover .msg-actions { opacity: 1; }
-
-.msg-act {
-  padding: 4px 10px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-muted);
-  font-size: 11px;
-  cursor: pointer;
-  transition: all 0.15s;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-family: inherit;
-}
-
-.msg-act:hover { color: var(--text); border-color: var(--border-hover); }
-
-/* Typing */
-.typing {
-  display: flex;
-  gap: 5px;
-  padding: 4px 0;
-}
-
-.typing span {
-  width: 6px;
-  height: 6px;
-  background: var(--accent);
-  border-radius: 50%;
-  animation: t-dot 1.4s ease-in-out infinite;
-}
-
-.typing span:nth-child(2) { animation-delay: 0.15s; }
-.typing span:nth-child(3) { animation-delay: 0.3s; }
-
-@keyframes t-dot {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
-  30% { transform: translateY(-6px); opacity: 1; }
-}
-
-/* Input */
-.input-zone {
-  padding: 16px 24px 20px;
-  border-top: 1px solid var(--border);
-  background: rgba(9,9,11,0.6);
-  backdrop-filter: blur(12px);
-}
-
-.input-box {
-  max-width: 720px;
-  margin: 0 auto;
-}
-
-.input-shell {
-  display: flex;
-  align-items: flex-end;
-  gap: 0;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 6px;
-  transition: all 0.25s;
-}
-
-.input-shell:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(139,92,246,0.15);
-}
-
-.input-tools {
-  display: flex;
-  padding: 4px;
-  gap: 2px;
-}
-
-.tool {
-  width: 34px;
-  height: 34px;
-  background: none;
-  border: none;
-  border-radius: 8px;
-  color: var(--text-muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-  font-size: 16px;
-}
-
-.tool:hover { background: var(--surface2); color: var(--text); }
-
-#msgInput {
-  flex: 1;
-  background: none;
-  border: none;
-  color: var(--text);
-  font-size: 14px;
-  font-family: inherit;
-  resize: none;
-  outline: none;
-  padding: 8px 8px;
-  max-height: 120px;
-  line-height: 1.5;
-}
-
-#msgInput::placeholder { color: var(--text-muted); }
-
-.btn-send {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, var(--accent), #7c3aed);
-  border: none;
-  border-radius: 10px;
-  color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
-
-.btn-send:hover { transform: scale(1.05); }
-.btn-send:active { transform: scale(0.93); }
-.btn-send:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
-
-.input-hint {
-  text-align: center;
-  margin-top: 8px;
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-.input-hint kbd {
-  background: var(--surface2);
-  padding: 1px 5px;
-  border-radius: 4px;
-  font-size: 10px;
-  border: 1px solid var(--border);
-}
-
-/* Modal */
-.modal-bg {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(6px);
-  z-index: 100;
-  display: none;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-bg.open { display: flex; }
-
-.modal {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  width: 480px;
-  max-width: 92vw;
-  max-height: 80vh;
-  overflow-y: auto;
-  padding: 24px;
-  animation: m-in 0.25s ease;
-}
-
-@keyframes m-in {
-  from { opacity: 0; transform: scale(0.96) translateY(8px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-.modal h2 {
-  font-size: 17px;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-
-.modal p {
-  font-size: 12px;
-  color: var(--text-dim);
-  margin-bottom: 16px;
-}
-
-.m-option {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.15s;
-  margin-bottom: 6px;
-}
-
-.m-option:hover { background: var(--surface2); border-color: var(--border-hover); }
-.m-option.active { border-color: var(--accent); background: rgba(139,92,246,0.06); }
-
-.m-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  flex-shrink: 0;
-}
-
-.m-info { flex: 1; }
-.m-name { font-size: 13px; font-weight: 600; }
-.m-desc { font-size: 11px; color: var(--text-muted); }
-
-.m-badge {
-  font-size: 9px;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 20px;
-  letter-spacing: 0.5px;
-}
-
-.m-badge.max { background: rgba(139,92,246,0.15); color: var(--accent); }
-.m-badge.pro { background: rgba(6,182,212,0.15); color: var(--accent2); }
-.m-badge.free { background: rgba(16,185,129,0.15); color: var(--green); }
-
-/* Settings panel */
-.settings {
-  position: fixed;
-  right: -360px;
-  top: 0;
-  bottom: 0;
-  width: 340px;
-  background: var(--surface);
-  border-left: 1px solid var(--border);
-  z-index: 50;
-  transition: right 0.3s cubic-bezier(0.4,0,0.2,1);
-  overflow-y: auto;
-  padding: 24px;
-}
-
-.settings.open { right: 0; }
-
-.set-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 28px;
-}
-
-.set-head h2 { font-size: 17px; font-weight: 700; }
-
-.set-close {
-  width: 32px;
-  height: 32px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text-dim);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-}
-
-.set-close:hover { color: var(--text); border-color: var(--border-hover); }
-
-.set-group { margin-bottom: 24px; }
-.set-label { font-size: 12px; font-weight: 600; color: var(--text-dim); margin-bottom: 8px; }
-
-.set-slider {
-  width: 100%;
-  -webkit-appearance: none;
-  height: 4px;
-  background: var(--surface3);
-  border-radius: 4px;
-  outline: none;
-}
-
-.set-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
-  background: var(--accent);
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.set-val { font-size: 11px; color: var(--accent); text-align: right; margin-top: 4px; }
-
-.set-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 0;
-}
-
-.set-row-label { font-size: 13px; }
-
-.toggle {
-  width: 40px;
-  height: 22px;
-  background: var(--surface3);
-  border-radius: 11px;
-  position: relative;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.toggle.on { background: var(--accent); }
-
-.toggle::after {
-  content: '';
-  width: 16px;
-  height: 16px;
-  background: white;
-  border-radius: 50%;
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  transition: transform 0.2s;
-}
-
-.toggle.on::after { transform: translateX(18px); }
-
-/* Responsive */
-@media (max-width: 768px) {
-  .sidebar { display: none; }
-  .suggestions { grid-template-columns: 1fr 1fr; }
-  .settings { width: 100%; }
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FulFillPro — Система управления складом v3.2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background: #f1f5f9; }
+        .sidebar-link { transition: all 0.2s; }
+        .sidebar-link:hover, .sidebar-link.active { background: #e0e7ff; color: #4338ca; border-right: 3px solid #4338ca; }
+        .glass-panel { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.5); }
+        .progress-fill { transition: width 0.4s ease-in-out; }
+        .voice-wave { animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } }
+        .qr-canvas canvas { width: 100% !important; height: auto !important; }
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    </style>
 </head>
-<body>
+<body class="text-slate-800">
 
-<canvas id="bg-canvas"></canvas>
-
-<!-- SIDEBAR -->
-<aside class="sidebar">
-  <div class="sidebar-top">
-    <div class="brand">
-      <div class="brand-icon">
-        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-      </div>
-      <span class="brand-name">NEXUS AI</span>
-      <span class="brand-tag">v4</span>
-    </div>
-    <button class="btn-new" onclick="newChat()">
-      <span>✦</span> Новый диалог
-    </button>
-  </div>
-
-  <div class="chat-list" id="chatList">
-    <div class="chat-item active" onclick="selChat(this)">
-      <div class="chat-item-icon">💻</div>
-      <div class="chat-item-text">React компонент с анимацией</div>
-    </div>
-    <div class="chat-item" onclick="selChat(this)">
-      <div class="chat-item-icon">🔬</div>
-      <div class="chat-item-text">Квантовая физика объяснение</div>
-    </div>
-    <div class="chat-item" onclick="selChat(this)">
-      <div class="chat-item-icon">📊</div>
-      <div class="chat-item-text">Анализ IT трендов 2025</div>
-    </div>
-    <div class="chat-item" onclick="selChat(this)">
-      <div class="chat-item-icon">🎨</div>
-      <div class="chat-item-text">Sci-fi рассказ</div>
-    </div>
-    <div class="chat-item" onclick="selChat(this)">
-      <div class="chat-item-icon">📚</div>
-      <div class="chat-item-text">План изучения ML</div>
-    </div>
-    <div class="chat-item" onclick="selChat(this)">
-      <div class="chat-item-icon">🔢</div>
-      <div class="chat-item-text">Дифференциальное уравнение</div>
-    </div>
-  </div>
-
-  <div class="sidebar-bottom">
-    <div class="user-row">
-      <div class="user-avatar">U</div>
-      <div class="user-info">
-        <div class="user-name">User</div>
-        <div class="user-plan">⚡ Pro Plan</div>
-      </div>
-    </div>
-  </div>
-</aside>
-
-<!-- MAIN -->
-<div class="main">
-  <!-- Header -->
-  <header class="header">
-    <div class="header-left">
-      <div class="model-btn" onclick="openModal()">
-        <div class="model-dot"></div>
-        <span class="model-label" id="modelLabel">NEXUS Ultra</span>
-        <span class="model-chevron">▾</span>
-      </div>
-    </div>
-    <div class="header-right">
-      <button class="hdr-btn" onclick="toggleSettings()" title="Настройки">⚙</button>
-      <button class="hdr-btn" onclick="clearAll()" title="Очистить">🗑</button>
-    </div>
-  </header>
-
-  <!-- Chat -->
-  <div class="chat-scroll" id="chatScroll">
-    <div class="welcome" id="welcomeScreen">
-      <div class="welcome-orb-wrap">
-        <div class="welcome-orb">✦</div>
-        <div class="orb-ring"></div>
-        <div class="orb-ring"></div>
-        <div class="orb-ring"></div>
-      </div>
-      <h1 class="welcome-title">NEXUS AI</h1>
-      <p class="welcome-sub">Искусственный интеллект без ограничений. Программирование, наука, творчество, аналитика — всё в одном месте.</p>
-
-      <div class="suggestions">
-        <div class="suggest-card" onclick="quick('Напиши Python скрипт для анализа данных')">
-          <div class="suggest-icon">🐍</div>
-          <div class="suggest-title">Python</div>
-          <div class="suggest-desc">Анализ данных и визуализация</div>
+<div id="loginScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-indigo-900 to-slate-900">
+    <div class="w-full max-w-md bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 text-white">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold tracking-tight">FulFillPro</h1>
+            <p class="text-indigo-200 mt-1">Система управления складом v3.2</p>
         </div>
-        <div class="suggest-card" onclick="quick('Объясни квантовые вычисления')">
-          <div class="suggest-icon">⚛️</div>
-          <div class="suggest-title">Наука</div>
-          <div class="suggest-desc">Квантовая физика просто</div>
-        </div>
-        <div class="suggest-card" onclick="quick('Создай план изучения машинного обучения')">
-          <div class="suggest-icon">📚</div>
-          <div class="suggest-title">Обучение</div>
-          <div class="suggest-desc">План по ML на 4 месяца</div>
-        </div>
-        <div class="suggest-card" onclick="quick('Напиши стихотворение')">
-          <div class="suggest-icon">✍️</div>
-          <div class="suggest-title">Поэзия</div>
-          <div class="suggest-desc">Стиль Пушкина</div>
-        </div>
-        <div class="suggest-card" onclick="quick('Проанализируй IT тренды 2025')">
-          <div class="suggest-icon">📊</div>
-          <div class="suggest-title">Аналитика</div>
-          <div class="suggest-desc">Тренды индустрии</div>
-        </div>
-        <div class="suggest-card" onclick="quick('Реши дифференциальное уравнение y\' + 2y = e^x')">
-          <div class="suggest-icon">🔢</div>
-          <div class="suggest-title">Математика</div>
-          <div class="suggest-desc">Дифференциальные уравнения</div>
-        </div>
-      </div>
+        <form id="loginForm" class="space-y-4">
+            <input type="text" id="loginUser" placeholder="Логин" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-indigo-400 focus:outline-none text-white placeholder-white/50" value="admin">
+            <input type="password" id="loginPass" placeholder="Пароль" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-indigo-400 focus:outline-none text-white placeholder-white/50" value="admin123">
+            <div class="flex items-center justify-between text-sm text-indigo-200">
+                <label class="flex items-center cursor-pointer"><input type="checkbox" class="mr-2 accent-indigo-500"> Запомнить меня</label>
+            </div>
+            <button type="submit" class="w-full py-3 bg-indigo-500 hover:bg-indigo-600 rounded-lg font-semibold transition shadow-lg shadow-indigo-500/30">Войти</button>
+        </form>
+        <div class="mt-6 text-center text-xs text-indigo-300">Демо: admin / admin123</div>
     </div>
-
-    <div class="msg-wrap" id="msgWrap"></div>
-  </div>
-
-  <!-- Input -->
-  <div class="input-zone">
-    <div class="input-box">
-      <div class="input-shell">
-        <div class="input-tools">
-          <button class="tool" onclick="attachFile()" title="Файл">📎</button>
-          <button class="tool" onclick="voice()" title="Голос">🎤</button>
-        </div>
-        <textarea id="msgInput" rows="1" placeholder="Спросите что угодно..." onkeydown="onKey(event)" oninput="resize(this)"></textarea>
-        <button class="btn-send" id="sendBtn" onclick="send()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        </button>
-      </div>
-      <div class="input-hint"><kbd>Enter</kbd> отправить · <kbd>Shift+Enter</kbd> новая строка</div>
-    </div>
-  </div>
 </div>
 
-<!-- Model Modal -->
-<div class="modal-bg" id="modelModal" onclick="if(event.target===this)closeModal()">
-  <div class="modal">
-    <h2>Выберите модель</h2>
-    <p>Разные модели для разных задач</p>
-    <div id="modelList">
-      <div class="m-option active" onclick="pickModel(this,'NEXUS Ultra')">
-        <div class="m-icon" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed)">🧠</div>
-        <div class="m-info"><div class="m-name">NEXUS Ultra</div><div class="m-desc">Максимальная мощность для сложных задач</div></div>
-        <span class="m-badge max">MAX</span>
-      </div>
-      <div class="m-option" onclick="pickModel(this,'NEXUS Coder')">
-        <div class="m-icon" style="background:linear-gradient(135deg,#10b981,#059669)">⚡</div>
-        <div class="m-info"><div class="m-name">NEXUS Coder</div><div class="m-desc">Оптимизирован для программирования</div></div>
-        <span class="m-badge pro">PRO</span>
-      </div>
-      <div class="m-option" onclick="pickModel(this,'NEXUS Creator')">
-        <div class="m-icon" style="background:linear-gradient(135deg,#f43f5e,#e11d48)">🎨</div>
-        <div class="m-info"><div class="m-name">NEXUS Creator</div><div class="m-desc">Творчество, тексты, дизайн</div></div>
-        <span class="m-badge pro">PRO</span>
-      </div>
-      <div class="m-option" onclick="pickModel(this,'NEXUS Fast')">
-        <div class="m-icon" style="background:linear-gradient(135deg,#06b6d4,#0891b2)">🚀</div>
-        <div class="m-info"><div class="m-name">NEXUS Fast</div><div class="m-desc">Мгновенные ответы</div></div>
-        <span class="m-badge free">FREE</span>
-      </div>
-      <div class="m-option" onclick="pickModel(this,'NEXUS Analyst')">
-        <div class="m-icon" style="background:linear-gradient(135deg,#3b82f6,#2563eb)">📊</div>
-        <div class="m-info"><div class="m-name">NEXUS Analyst</div><div class="m-desc">Анализ данных и бизнес-инсайты</div></div>
-        <span class="m-badge pro">PRO</span>
-      </div>
-    </div>
-  </div>
+<div id="app" class="hidden flex h-screen overflow-hidden bg-slate-50">
+    <aside class="w-64 bg-white border-r border-slate-200 flex flex-col z-20">
+        <div class="p-6 border-b border-slate-100">
+            <h2 class="text-xl font-bold text-indigo-700 tracking-wide">FulFillPro</h2>
+            <span class="text-xs text-slate-400">Склад v3.2 • <span class="text-emerald-500">●</span> Онлайн</span>
+        </div>
+        <nav class="flex-1 overflow-y-auto py-4 scrollbar-thin" id="mainNav">
+            <button data-target="dashboard" class="sidebar-link active w-full flex items-center px-6 py-3 text-slate-600 hover:text-indigo-700 font-medium"><i class="ri-dashboard-line mr-3"></i> Дашборд</button>
+            <button data-target="shipping" class="sidebar-link w-full flex items-center px-6 py-3 text-slate-600 hover:text-indigo-700 font-medium"><i class="ri-truck-line mr-3"></i> Отгрузка</button>
+            <button data-target="inventory" class="sidebar-link w-full flex items-center px-6 py-3 text-slate-600 hover:text-indigo-700 font-medium"><i class="ri-file-list-3-line mr-3"></i> Инвентаризация</button>
+            <button data-target="fines" class="sidebar-link w-full flex items-center px-6 py-3 text-slate-600 hover:text-indigo-700 font-medium"><i class="ri-coin-line mr-3"></i> Штрафы</button>
+            <button data-target="products" class="sidebar-link w-full flex items-center px-6 py-3 text-slate-600 hover:text-indigo-700 font-medium"><i class="ri-box-3-line mr-3"></i> Товары</button>
+            <button data-target="receiving" class="sidebar-link w-full flex items-center px-6 py-3 text-slate-600 hover:text-indigo-700 font-medium"><i class="ri-scan-line mr-3"></i> Приёмка ТСД</button>
+            <button data-target="employees" class="sidebar-link w-full flex items-center px-6 py-3 text-slate-600 hover:text-indigo-700 font-medium"><i class="ri-group-line mr-3"></i> Сотрудники</button>
+            <button data-target="tasks" class="sidebar-link w-full flex items-center px-6 py-3 text-slate-600 hover:text-indigo-700 font-medium"><i class="ri-todo-line mr-3"></i> Задачи</button>
+            <button data-target="clients" class="sidebar-link w-full flex items-center px-6 py-3 text-slate-600 hover:text-indigo-700 font-medium"><i class="ri-building-line mr-3"></i> Клиенты</button>
+            <button data-target="settings" class="sidebar-link w-full flex items-center px-6 py-3 text-slate-600 hover:text-indigo-700 font-medium"><i class="ri-settings-4-line mr-3"></i> Настройки</button>
+        </nav>
+        <div class="p-4 border-t border-slate-100 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">АД</div>
+            <div><div class="text-sm font-medium">Админ</div><div class="text-xs text-slate-400">Супервайзер</div></div>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col overflow-hidden relative">
+        <header class="h-16 bg-white/80 backdrop-blur border-b border-slate-200 flex items-center justify-between px-6">
+            <h2 id="pageTitle" class="text-lg font-semibold text-slate-800">Дашборд</h2>
+            <div class="flex items-center gap-4">
+                <button id="voiceToggle" class="p-2 rounded-full hover:bg-slate-100 text-slate-500 transition" title="Голосовой помощник">
+                    <i class="ri-mic-line text-xl"></i>
+                </button>
+                <div class="relative">
+                    <i class="ri-notification-3-line text-xl text-slate-500"></i>
+                    <span class="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full"></span>
+                </div>
+            </div>
+        </header>
+
+        <div id="contentArea" class="flex-1 overflow-y-auto p-6 scrollbar-thin">
+            <!-- DASHBOARD -->
+            <section id="dashboard" class="fade-in space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                        <div class="text-slate-500 text-sm">Товары на складе</div>
+                        <div class="text-3xl font-bold text-indigo-700 mt-2" id="dashTotalItems">0</div>
+                        <div class="text-xs text-emerald-600 mt-1">▲ +12% за неделю</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                        <div class="text-slate-500 text-sm">Приёмки сегодня</div>
+                        <div class="text-3xl font-bold text-amber-600 mt-2" id="dashReceiving">0</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                        <div class="text-slate-500 text-sm">Отгрузки сегодня</div>
+                        <div class="text-3xl font-bold text-blue-600 mt-2" id="dashShipping">0</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                        <div class="text-slate-500 text-sm">Сотрудники онлайн</div>
+                        <div class="text-3xl font-bold text-emerald-600 mt-2"><span id="dashOnline">0</span> / <span id="dashTotalStaff">0</span></div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 lg:col-span-2">
+                        <h3 class="font-semibold mb-4">Движение товара за 7 дней</h3>
+                        <canvas id="movementChart" height="120"></canvas>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                        <h3 class="font-semibold mb-4">Заполненность склада</h3>
+                        <canvas id="occupancyChart" height="120"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="font-semibold mb-4">Последние операции</h3>
+                    <div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead class="bg-slate-50 text-slate-500"><tr><th class="p-3">Дата</th><th class="p-3">Тип</th><th class="p-3">ID</th><th class="p-3">Товаров</th><th class="p-3">Статус</th></tr></thead><tbody id="recentOpsTable"></tbody></table></div>
+                </div>
+            </section>
+
+            <!-- SHIPPING (OZON & WB) -->
+            <section id="shipping" class="hidden fade-in space-y-6">
+                <div class="flex space-x-4 border-b border-slate-200 pb-2">
+                    <button class="px-4 py-2 text-indigo-700 font-semibold border-b-2 border-indigo-600" onclick="switchShipping('ozon')">Отгрузка ОЗОН</button>
+                    <button class="px-4 py-2 text-slate-500 hover:text-indigo-700" onclick="switchShipping('wb')">Отгрузка ВБ</button>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-lg" id="shippingTitle">Отгрузка ОЗОН</h3>
+                            <span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded" id="shippingPlatformTag">OZON FBS</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div><label class="block text-sm text-slate-500 mb-1">Город получения</label><input type="text" id="shipCity" placeholder="Москва" class="w-full p-2 border rounded"></div>
+                            <div><label class="block text-sm text-slate-500 mb-1">Паллет (макс <span id="maxBoxPerPallet">30</span> коробов)</label><input type="number" id="shipPallets" value="1" class="w-full p-2 border rounded"></div>
+                        </div>
+                        
+                        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 mb-4">
+                            <div class="flex gap-2 mb-3">
+                                <input type="text" id="shipScanInput" placeholder="Сканируйте ШК товара (Enter)" class="flex-1 p-2 border rounded focus:ring-2 focus:ring-indigo-300 outline-none">
+                                <button onclick="simulateShipScan()" class="px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700">Добавить</button>
+                            </div>
+                            <div class="flex items-center justify-between text-sm text-slate-600 mb-2">
+                                <span>Текущий короб: <b id="currentBoxNum">1</b> (60x40x40)</span>
+                                <span>Заполнено: <b id="boxProgress">0</b>%</span>
+                            </div>
+                            <div class="w-full bg-slate-200 rounded-full h-2.5 mb-3"><div id="boxProgressBar" class="progress-fill bg-indigo-500 h-2.5 rounded-full" style="width: 0%"></div></div>
+                            <button onclick="closeCurrentBox()" id="closeBoxBtn" class="w-full py-2 border-2 border-slate-300 text-slate-500 rounded hover:border-indigo-500 hover:text-indigo-600 disabled:opacity-50" disabled>Закрыть короб и перейти к следующему</button>
+                        </div>
+
+                        <div id="qrContainer" class="hidden text-center p-4 border-2 border-dashed border-slate-300 rounded-lg">
+                            <p class="text-sm text-slate-500 mb-2">QR-код сгенерирован автоматически</p>
+                            <div id="qrCanvas" class="inline-block qr-canvas mb-2"></div>
+                            <div class="text-xs text-slate-400">Прикрепите к коробу</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                        <h3 class="font-bold mb-4">Сводка отгрузки</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between p-3 bg-slate-50 rounded"><span class="text-slate-500">Город</span><span class="font-medium" id="summaryCity">—</span></div>
+                            <div class="flex justify-between p-3 bg-slate-50 rounded"><span class="text-slate-500">Коробов</span><span class="font-medium" id="summaryBoxes">0</span></div>
+                            <div class="flex justify-between p-3 bg-slate-50 rounded"><span class="text-slate-500">Товаров</span><span class="font-medium" id="summaryItems">0</span></div>
+                            <div class="flex justify-between p-3 bg-slate-50 rounded"><span class="text-slate-500">Палетов</span><span class="font-medium" id="summaryPallets">0</span></div>
+                        </div>
+                        <button onclick="finalizeShipping()" class="w-full mt-4 py-3 bg-emerald-600 text-white rounded hover:bg-emerald-700 font-medium">Завершить отгрузку</button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="font-semibold mb-3">История коробов</h3>
+                    <div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead class="bg-slate-50 text-slate-500"><tr><th class="p-3">№ Короба</th><th class="p-3">QR</th><th class="p-3">Товаров</th><th class="p-3">Палет</th><th class="p-3">Статус</th></tr></thead><tbody id="boxHistoryTable"></tbody></table></div>
+                </div>
+            </section>
+
+            <!-- INVENTORY -->
+            <section id="inventory" class="hidden fade-in space-y-6">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold">Инвентаризация</h3>
+                    <div class="flex gap-2">
+                        <button onclick="startInventory()" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Начать новую</button>
+                        <button onclick="exportInventory()" class="px-4 py-2 border border-slate-300 rounded hover:bg-slate-50">Экспорт</button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="bg-white p-4 rounded-lg border border-slate-200"><div class="text-sm text-slate-500">Ожидаемо</div><div class="text-2xl font-bold" id="invExpected">0</div></div>
+                    <div class="bg-white p-4 rounded-lg border border-slate-200"><div class="text-sm text-slate-500">Фактически</div><div class="text-2xl font-bold" id="invActual">0</div></div>
+                    <div class="bg-white p-4 rounded-lg border border-slate-200"><div class="text-sm text-slate-500">Расхождение</div><div class="text-2xl font-bold text-rose-600" id="invDiff">0</div></div>
+                    <div class="bg-white p-4 rounded-lg border border-slate-200"><div class="text-sm text-slate-500">Прогресс</div><div class="text-2xl font-bold text-emerald-600" id="invProgress">0%</div></div>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="invScanInput" placeholder="Сканируйте ШК товара" class="flex-1 p-2 border rounded">
+                        <input type="number" id="invCountInput" placeholder="Кол-во" class="w-24 p-2 border rounded">
+                        <button onclick="addInvItem()" class="px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700">Фиксировать</button>
+                    </div>
+                    <div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead class="bg-slate-50 text-slate-500"><tr><th class="p-3">Артикул</th><th class="p-3">Название</th><th class="p-3">Ожид.</th><th class="p-3">Факт</th><th class="p-3">Δ</th><th class="p-3">Статус</th></tr></thead><tbody id="invTable"></tbody></table></div>
+                </div>
+            </section>
+
+            <!-- FINES -->
+            <section id="fines" class="hidden fade-in space-y-6">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold">Штрафы и нарушения</h3>
+                    <button onclick="addFine()" class="px-4 py-2 bg-rose-600 text-white rounded hover:bg-rose-700">+ Новый штраф</button>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-4">
+                    <h4 class="font-semibold mb-3 text-slate-700">📋 Справочник штрафов фулфилмента</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                        <div class="p-3 bg-rose-50 rounded border border-rose-100"><p class="font-medium text-rose-800">1. Пересорт / Ошибка сборки</p><p class="text-slate-600 mt-1">Штраф: 500-2000₽. Как избежать: Двойная проверка ШК перед упаковкой, сверка с заказом.</p></div>
+                        <div class="p-3 bg-rose-50 rounded border border-rose-100"><p class="font-medium text-rose-800">2. Порча товара при упаковке</p><p class="text-slate-600 mt-1">Штраф: Стоимость товара. Как избежать: Использование правильных наполнителей, контроль давления на хрупкое.</p></div>
+                        <div class="p-3 bg-rose-50 rounded border border-rose-100"><p class="font-medium text-rose-800">3. Невложение документов/инструкций</p><p class="text-slate-600 mt-1">Штраф: 300-1000₽. Как избежать: Чек-лист вложенных листов, автопринтер этикеток.</p></div>
+                        <div class="p-3 bg-rose-50 rounded border border-rose-100"><p class="font-medium text-rose-800">4. Превышение срока сборки (SLA)</p><p class="text-slate-600 mt-1">Штраф: от 100₽/час задержки. Как избежать: Таймер на ТСД, приоритизация срочных заказов.</p></div>
+                        <div class="p-3 bg-rose-50 rounded border border-rose-100"><p class="font-medium text-rose-800">5. Потеря товара на складе (утеря)</p><p class="text-slate-600 mt-1">Штраф: До 5000₽. Как избежать: Строгая адресная система, регулярные микро-инвентаризации.</p></div>
+                        <div class="p-3 bg-rose-50 rounded border border-rose-100"><p class="font-medium text-rose-800">6. Нарушение маркировки/КИЗ</p><p class="text-slate-600 mt-1">Штраф: По закону РФ/оферты МП. Как избежать: Сканирование Честного Знака до упаковки, валидация кодов.</p></div>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead class="bg-slate-50 text-slate-500"><tr><th class="p-3">Дата</th><th class="p-3">Сотрудник</th><th class="p-3">Тип</th><th class="p-3">Причина</th><th class="p-3">Сумма</th><th class="p-3">Как избежать</th><th class="p-3">Действия</th></tr></thead><tbody id="finesTable"></tbody></table></div>
+                </div>
+            </section>
+
+            <!-- OTHER SECTIONS PLACEHOLDERS -->
+            <section id="products" class="hidden fade-in space-y-4"><h3 class="text-xl font-bold">Товары</h3><div class="bg-white p-6 rounded-xl border border-slate-200">Таблица товаров и управление...</div></section>
+            <section id="receiving" class="hidden fade-in space-y-4"><h3 class="text-xl font-bold">Приёмка ТСД</h3><div class="bg-white p-6 rounded-xl border border-slate-200">Сканирование и оприходование...</div></section>
+            <section id="employees" class="hidden fade-in space-y-4"><h3 class="text-xl font-bold">Сотрудники</h3><div class="bg-white p-6 rounded-xl border border-slate-200">Посещаемость и график...</div></section>
+            <section id="tasks" class="hidden fade-in space-y-4"><h3 class="text-xl font-bold">Задачи</h3><div class="bg-white p-6 rounded-xl border border-slate-200">Канбан и распределение...</div></section>
+            <section id="clients" class="hidden fade-in space-y-4"><h3 class="text-xl font-bold">Клиенты</h3><div class="bg-white p-6 rounded-xl border border-slate-200">База контрагентов...</div></section>
+            <section id="settings" class="hidden fade-in space-y-4"><h3 class="text-xl font-bold">Настройки</h3><div class="bg-white p-6 rounded-xl border border-slate-200">Параметры системы и интеграции...</div></section>
+        </div>
+    </main>
 </div>
 
-<!-- Settings -->
-<div class="settings" id="settingsPanel">
-  <div class="set-head">
-    <h2>⚙ Настройки</h2>
-    <button class="set-close" onclick="toggleSettings()">✕</button>
-  </div>
-
-  <div class="set-group">
-    <div class="set-label">Температура</div>
-    <input type="range" class="set-slider" min="0" max="200" value="80" oninput="document.getElementById('tv').textContent=(this.value/100).toFixed(2)">
-    <div class="set-val" id="tv">0.80</div>
-  </div>
-
-  <div class="set-group">
-    <div class="set-label">Max токенов</div>
-    <input type="range" class="set-slider" min="100" max="4000" value="2000" step="100" oninput="document.getElementById('mv').textContent=this.value+' токенов'">
-    <div class="set-val" id="mv">2000 токенов</div>
-  </div>
-
-  <div class="set-group">
-    <div class="set-label">Top-P</div>
-    <input type="range" class="set-slider" min="10" max="100" value="90" oninput="document.getElementById('pv').textContent=(this.value/100).toFixed(2)">
-    <div class="set-val" id="pv">0.90</div>
-  </div>
-
-  <div class="set-group">
-    <div class="set-row"><span class="set-row-label">Стриминг</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
-    <div class="set-row"><span class="set-row-label">Web-поиск</span><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
-    <div class="set-row"><span class="set-row-label">Контекст памяти</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
-  </div>
+<!-- Voice Assistant -->
+<div id="voiceAssistant" class="fixed bottom-6 right-6 z-40 hidden">
+    <div class="w-80 bg-white/95 backdrop-blur shadow-2xl rounded-2xl border border-slate-200 overflow-hidden transition-all duration-300 transform translate-y-10 opacity-0" id="voicePanel">
+        <div class="bg-indigo-600 p-4 text-white flex justify-between items-center">
+            <span class="font-semibold">Голосовой помощник</span>
+            <button onclick="toggleVoiceUI()" class="text-white/80 hover:text-white"><i class="ri-close-line"></i></button>
+        </div>
+        <div id="voiceLog" class="p-4 h-64 overflow-y-auto space-y-2 bg-slate-50 text-sm">
+            <div class="text-slate-400 text-center text-xs mt-4">Привет! Я ваш ИИ-ассистент по складу. Спросите: "Статус отгрузки", "Где товар", "Как избежать штрафов", "Начать инвентаризацию".</div>
+        </div>
+        <div class="p-3 border-t border-slate-200 bg-white flex gap-2">
+            <button id="micBtn" onclick="startVoice()" class="flex-1 bg-indigo-100 text-indigo-700 py-2 rounded-lg hover:bg-indigo-200 flex items-center justify-center gap-2"><i class="ri-mic-fill"></i> Говорить</button>
+            <input type="text" id="voiceTextInput" placeholder="Или введите текст..." class="flex-1 border border-slate-300 rounded-lg px-3 text-sm outline-none focus:border-indigo-400" onkeydown="if(event.key==='Enter')handleVoiceInput()">
+            <button onclick="handleVoiceInput()" class="bg-indigo-600 text-white px-3 rounded-lg hover:bg-indigo-700"><i class="ri-send-plane-fill"></i></button>
+        </div>
+    </div>
+    <button onclick="toggleVoiceUI()" class="w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition voice-wave"><i class="ri-mic-line text-2xl"></i></button>
 </div>
 
 <script>
-// Background canvas
-const canvas = document.getElementById('bg-canvas');
-const ctx = canvas.getContext('2d');
-let w, h, dots = [];
-
-function initBg() {
-  w = canvas.width = window.innerWidth;
-  h = canvas.height = window.innerHeight;
-  dots = [];
-  for (let i = 0; i < 60; i++) {
-    dots.push({
-      x: Math.random() * w,
-      y: Math.random() * h,
-      vx: (Math.random() - 0.5) * 0.3,
-      vy: (Math.random() - 0.5) * 0.3,
-      r: Math.random() * 1.5 + 0.5,
-      a: Math.random() * 0.3 + 0.1
-    });
-  }
-}
-
-function drawBg() {
-  ctx.clearRect(0, 0, w, h);
-  dots.forEach(d => {
-    d.x += d.vx;
-    d.y += d.vy;
-    if (d.x < 0) d.x = w;
-    if (d.x > w) d.x = 0;
-    if (d.y < 0) d.y = h;
-    if (d.y > h) d.y = 0;
-
-    ctx.beginPath();
-    ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(139,92,246,${d.a})`;
-    ctx.fill();
-  });
-
-  // Draw connections
-  for (let i = 0; i < dots.length; i++) {
-    for (let j = i + 1; j < dots.length; j++) {
-      const dx = dots[i].x - dots[j].x;
-      const dy = dots[i].y - dots[j].y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 120) {
-        ctx.beginPath();
-        ctx.moveTo(dots[i].x, dots[i].y);
-        ctx.lineTo(dots[j].x, dots[j].y);
-        ctx.strokeStyle = `rgba(139,92,246,${0.06 * (1 - dist / 120)})`;
-        ctx.lineWidth = 0.5;
-        ctx.stroke();
-      }
-    }
-  }
-  requestAnimationFrame(drawBg);
-}
-
-window.addEventListener('resize', initBg);
-initBg();
-drawBg();
-
-// State
-let model = 'NEXUS Ultra';
-let busy = false;
-
-const responses = {
-  default: `<p>Отличный вопрос! Позвольте ответить подробно.</p>
-<p>Я проанализировал ваш запрос. Вот ключевые моменты:</p>
-<ul>
-<li><strong>Контекст:</strong> задача требует комплексного подхода</li>
-<li><strong>Решение:</strong> существует несколько оптимальных путей</li>
-<li><strong>Рекомендация:</strong> начните с базовой реализации и улучшайте</li>
-</ul>
-<p>Могу предоставить более детальный ответ — уточните ваш запрос! 🚀</p>`,
-
-  python: `<p>Вот Python скрипт для анализа данных:</p>
-<pre>import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-
-# Загрузка данных
-df = pd.read_csv('data.csv')
-
-# Базовая статистика
-print(df.describe())
-
-# Корреляции
-corr = df.corr()
-
-# Визуализация
-df.plot(kind='scatter', x='col1', y='col2')
-plt.title('Анализ данных')
-plt.show()</pre>
-<p>Скрипт использует <strong>pandas</strong> для обработки, <strong>numpy</strong> для вычислений и <strong>matplotlib</strong> для визуализации. Нужно добавить что-то ещё? 🐍</p>`,
-
-  react: `<p>React компонент с анимациями:</p>
-<pre>import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-
-const Card = ({ title, children }) => {
-  const [show, setShow] = useState(false);
-  useEffect(() => setShow(true), []);
-
-  return (
-    &lt;AnimatePresence&gt;
-      {show &amp;&amp; (
-        &lt;motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          style={{
-            padding: 24,
-            borderRadius: 16,
-            background: 'linear-gradient(135deg, #1a1a2e, #16162a)',
-          }}
-        &gt;
-          &lt;h3&gt;{title}&lt;/h3&gt;
-          {children}
-        &lt;/motion.div&gt;
-      )}
-    &lt;/AnimatePresence&gt;
-  );
-};</pre>
-<p>Использует <strong>Framer Motion</strong> для плавных анимаций. ⚡</p>`,
-
-  quantum: `<h3>🔮 Кубиты</h3>
-<p>Обычные биты — это 0 или 1. <strong>Кубиты</strong> могут быть и 0, и 1 одновременно благодаря <strong>суперпозиции</strong>. Представьте монетку в воздухе — она и орёл, и решка!</p>
-
-<h3>🔗 Запутанность</h3>
-<p>Два кубита могут быть «запутаны» — изменение одного мгновенно влияет на другой, даже на расстоянии.</p>
-
-<h3>⚡ Что могут квантовые компьютеры</h3>
-<ul>
-<li>Взломать шифры (алгоритм Шора)</li>
-<li>Ускорить поиск (алгоритм Гровера)</li>
-<li>Моделировать молекулы для лекарств</li>
-<li>Решать оптимизационные задачи</li>
-</ul>
-<p>Хотите глубже в какой-то аспект? 🔬</p>`,
-
-  ml: `<h3>📅 Месяц 1: Основы</h3>
-<ul>
-<li>Python: NumPy, Pandas, Matplotlib</li>
-<li>Линейная алгебра и статистика</li>
-<li>Supervised / Unsupervised обучение</li>
-</ul>
-
-<h3>📅 Месяц 2: Алгоритмы</h3>
-<ul>
-<li>Линейная и логистическая регрессия</li>
-<li>Random Forest, SVM</li>
-<li>K-means кластеризация</li>
-</ul>
-
-<h3>📅 Месяц 3: Нейросети</h3>
-<ul>
-<li>PyTorch / TensorFlow</li>
-<li>CNN для зрения, RNN для текста</li>
-</ul>
-
-<h3>📅 Месяц 4: Продвинутое</h3>
-<ul>
-<li>Transformers, NLP</li>
-<li>GANs, Transfer Learning</li>
-<li>MLOps и деплой</li>
-</ul>
-<p>Раскрыть подробнее какой-то раздел? 📚</p>`,
-
-  poem: `<p><em>Я помню чудное мгновенье:</em><br>
-<em>Передо мной явилась ты,</em><br>
-<em>Как мимолётное виденье,</em><br>
-<em>Как гений чистой красоты.</em></p>
-
-<p><em>В томленьях грусти безнадежной,</em><br>
-<em>В тревогах шумной суеты,</em><br>
-<em>Звучал мне долго голос нежный</em><br>
-<em>И снились милые черты.</em></p>
-
-<p>Хотите оригинальное стихотворение на вашу тему? ✍️</p>`,
-
-  math: `<h3>y' + 2y = e<sup>x</sup></h3>
-
-<p><strong>Шаг 1:</strong> Однородное уравнение:</p>
-<p>y' + 2y = 0 → y<sub>h</sub> = C·e<sup>−2x</sup></p>
-
-<p><strong>Шаг 2:</strong> Частное решение:</p>
-<p>y<sub>p</sub> = A·e<sup>x</sup></p>
-<p>A·e<sup>x</sup> + 2A·e<sup>x</sup> = e<sup>x</sup></p>
-<p>3A = 1 → A = 1/3</p>
-
-<p><strong>Шаг 3:</strong> Общее решение:</p>
-<p><strong>y = C·e<sup>−2x</sup> + (1/3)·e<sup>x</sup></strong></p>
-
-<p>Могу решить любое другое уравнение! 🔢</p>`,
-
-  trends: `<h3>📊 Ключевые тренды 2025</h3>
-<ul>
-<li><strong>ИИ-интеграция:</strong> 85% компаний внедряют AI</li>
-<li><strong>Квантовые вычисления:</strong> +40% инвестиций</li>
-<li><strong>Зелёные технологии:</strong> ESG — приоритет №1</li>
-<li><strong>Web3:</strong> рост децентрализованных приложений</li>
-<li><strong>EdTech:</strong> рынок $400 млрд</li>
-</ul>
-<p>Детальный разбор какого-то направления? 📈</p>`,
-
-  story: `<p><strong>«Последний сигнал»</strong></p>
-<p>Капитан Вера стояла перед иллюминатором «Прометея». За стеклом — бесконечность космоса, усеянная звёздами, которые были уже не такими, какими их помнила Земля.</p>
-<p>Сигнал пришёл из системы Кеплер-442. Не от людей. Не от известных цивилизаций. От чего-то, что ждало миллионы лет.</p>
-<p>«Они не хотят войны», — перевёл ИИ-лингвист. «Они хотят <em>вспомнить</em>».</p>
-<p>Вера улыбнулась. Вселенная оказалась меньше, чем они думали. И бесконечно старше.</p>
-<p>Продолжение или другую историю? ✨</p>`
+// ================= STATE & DATA =================
+const AppState = {
+    isLoggedIn: false,
+    currentTab: 'dashboard',
+    products: [
+        {id: 'P001', sku: '789123456789', name: 'Беспроводные наушники', stock: 145, expected: 150},
+        {id: 'P002', sku: '456789123456', name: 'Чехол iPhone 14', stock: 320, expected: 300},
+        {id: 'P003', sku: '321654987321', name: 'Умная колонка', stock: 56, expected: 60}
+    ],
+    shipping: {
+        platform: 'ozon',
+        city: '',
+        currentBox: { num: 1, items: 0, capacity: 50, closed: false },
+        closedBoxes: [],
+        totalPallets: 0,
+        maxBoxesPerPallet: 30
+    },
+    fines: [
+        {date: '2023-10-25', staff: 'Иванов А.', type: 'Пересорт', reason: 'Неверный артикул в заказе #882', amount: 1500, prevention: 'Двойная проверка ШК', status: 'Оплачен'},
+        {date: '2023-10-28', staff: 'Петрова С.', type: 'Порча', reason: 'Разбито стекло при упаковке', amount: 2200, prevention: 'Использовать пупырчатую плёнку', status: 'В ожидании'}
+    ],
+    inventory: [],
+    inventoryActive: false,
+    recentOps: [
+        {date: '2023-10-29', type: 'Приёмка', id: '#PR-112', items: 45, status: 'Завершено'},
+        {date: '2023-10-29', type: 'Отгрузка OZON', id: '#SH-089', items: 120, status: 'В пути'}
+    ]
 };
 
-function getResponse(text) {
-  const t = text.toLowerCase();
-  if (t.includes('python') || t.includes('скрипт') || t.includes('анализ')) return responses.python;
-  if (t.includes('react') || t.includes('компонент')) return responses.react;
-  if (t.includes('квантов') || t.includes('физик')) return responses.quantum;
-  if (t.includes('машинн') || t.includes('обучен') || t.includes('ml') || t.includes('план')) return responses.ml;
-  if (t.includes('стих') || t.includes('поэз') || t.includes('пушкин')) return responses.poem;
-  if (t.includes('уравнен') || t.includes('математик') || t.includes('реши')) return responses.math;
-  if (t.includes('тренд') || t.includes('аналитик') || t.includes('бизнес') || t.includes('стартап')) return responses.trends;
-  if (t.includes('рассказ') || t.includes('творч') || t.includes('истори') || t.includes('фантастик')) return responses.story;
-  return responses.default;
+// ================= UTILS =================
+function switchTab(tab) {
+    document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+    document.getElementById(tab).classList.remove('hidden');
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+    document.querySelector(`[data-target="${tab}"]`).classList.add('active');
+    document.getElementById('pageTitle').textContent = document.querySelector(`[data-target="${tab}"]`).textContent.trim();
+    AppState.currentTab = tab;
+    updateDashboard();
 }
 
-// Functions
-function now() {
-  const d = new Date();
-  return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
-}
+document.getElementById('mainNav').addEventListener('click', e => {
+    const btn = e.target.closest('.sidebar-link');
+    if(btn) switchTab(btn.dataset.target);
+});
 
-function esc(t) {
-  const d = document.createElement('div');
-  d.textContent = t;
-  return d.innerHTML;
-}
-
-function addMsg(type, text) {
-  const wrap = document.getElementById('msgWrap');
-  const div = document.createElement('div');
-  div.className = 'msg ' + type;
-
-  const av = type === 'user' ? 'U' : '✦';
-  const sender = type === 'user' ? 'Вы' : model;
-
-  div.innerHTML = `
-    <div class="msg-avatar">${av}</div>
-    <div class="msg-body">
-      <div class="msg-top">
-        <span class="msg-sender">${sender}</span>
-        <span class="msg-time">${now()}</span>
-      </div>
-      <div class="msg-text">${type === 'user' ? esc(text) : ''}</div>
-      ${type === 'ai' ? `<div class="msg-actions">
-        <button class="msg-act" onclick="copyMsg(this)">📋 Копировать</button>
-        <button class="msg-act" onclick="regen()">🔄 Ещё раз</button>
-        <button class="msg-act" onclick="this.style.color='#10b981'">👍</button>
-        <button class="msg-act" onclick="this.style.color='#f43f5e'">👎</button>
-      </div>` : ''}
-    </div>
-  `;
-
-  wrap.appendChild(div);
-  scroll();
-  return div;
-}
-
-function scroll() {
-  const el = document.getElementById('chatScroll');
-  el.scrollTop = el.scrollHeight;
-}
-
-function hideWelcome() {
-  const ws = document.getElementById('welcomeScreen');
-  if (ws) ws.style.display = 'none';
-}
-
-async function send() {
-  const inp = document.getElementById('msgInput');
-  const text = inp.value.trim();
-  if (!text || busy) return;
-
-  hideWelcome();
-  busy = true;
-  document.getElementById('sendBtn').disabled = true;
-
-  addMsg('user', text);
-  inp.value = '';
-  resize(inp);
-
-  // typing
-  const wrap = document.getElementById('msgWrap');
-  const typ = document.createElement('div');
-  typ.className = 'msg ai';
-  typ.innerHTML = `
-    <div class="msg-avatar">✦</div>
-    <div class="msg-body">
-      <div class="msg-top">
-        <span class="msg-sender">${model}</span>
-        <span class="msg-time">${now()}</span>
-      </div>
-      <div class="typing"><span></span><span></span><span></span></div>
-    </div>
-  `;
-  wrap.appendChild(typ);
-  scroll();
-
-  await sleep(800 + Math.random() * 1200);
-  typ.remove();
-
-  const resp = getResponse(text);
-  const msg = addMsg('ai', '');
-  const txtEl = msg.querySelector('.msg-text');
-
-  // Simulate streaming
-  txtEl.classList.add('streaming');
-  txtEl.innerHTML = resp;
-  await sleep(200);
-  txtEl.classList.remove('streaming');
-
-  busy = false;
-  document.getElementById('sendBtn').disabled = false;
-}
-
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-function onKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
+// ================= LOGIN =================
+document.getElementById('loginForm').addEventListener('submit', e => {
     e.preventDefault();
-    send();
-  }
+    AppState.isLoggedIn = true;
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    document.getElementById('voiceAssistant').classList.remove('hidden');
+    updateDashboard();
+    initCharts();
+});
+
+// ================= DASHBOARD =================
+function updateDashboard() {
+    document.getElementById('dashTotalItems').textContent = AppState.products.reduce((a,b)=>a+b.stock, 0);
+    document.getElementById('dashReceiving').textContent = 12; // Mock
+    document.getElementById('dashShipping').textContent = AppState.shipping.closedBoxes.length;
+    document.getElementById('dashOnline').textContent = 8;
+    document.getElementById('dashTotalStaff').textContent = 15;
+    
+    const tbody = document.getElementById('recentOpsTable');
+    tbody.innerHTML = AppState.recentOps.map(op => `
+        <tr class="border-b border-slate-100 hover:bg-slate-50">
+            <td class="p-3">${op.date}</td><td class="p-3">${op.type}</td><td class="p-3 font-mono">${op.id}</td><td class="p-3">${op.items}</td>
+            <td class="p-3"><span class="px-2 py-1 rounded text-xs ${op.status==='Завершено'?'bg-emerald-100 text-emerald-700':'bg-amber-100 text-amber-700'}">${op.status}</span></td>
+        </tr>
+    `).join('');
 }
 
-function resize(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+function initCharts() {
+    new Chart(document.getElementById('movementChart'), {
+        type: 'line',
+        data: { labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'], datasets: [{ label: 'Приёмка', data: [12, 19, 8, 15, 22, 10, 5], borderColor: '#3b82f6', tension: 0.4 }, { label: 'Отгрузка', data: [8, 12, 15, 18, 25, 14, 9], borderColor: '#10b981', tension: 0.4 }] },
+        options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+    });
+    new Chart(document.getElementById('occupancyChart'), {
+        type: 'doughnut',
+        data: { labels: ['Занято', 'Свободно'], datasets: [{ data: [72, 28], backgroundColor: ['#6366f1', '#e2e8f0'], borderWidth: 0 }] },
+        options: { cutout: '70%', plugins: { legend: { position: 'bottom' } } }
+    });
 }
 
-function quick(text) {
-  document.getElementById('msgInput').value = text;
-  send();
+// ================= SHIPPING LOGIC =================
+function switchShipping(platform) {
+    AppState.shipping.platform = platform;
+    AppState.shipping.maxBoxesPerPallet = platform === 'ozon' ? 30 : 192;
+    AppState.shipping.currentBox = { num: AppState.shipping.closedBoxes.length + 1, items: 0, capacity: 50, closed: false };
+    
+    document.getElementById('shippingTitle').textContent = platform === 'ozon' ? 'Отгрузка ОЗОН' : 'Отгрузка ВБ';
+    document.getElementById('shippingPlatformTag').textContent = platform === 'ozon' ? 'OZON FBS' : 'WB FBO';
+    document.getElementById('maxBoxPerPallet').textContent = AppState.shipping.maxBoxesPerPallet;
+    document.getElementById('boxProgress').textContent = 0;
+    document.getElementById('boxProgressBar').style.width = '0%';
+    document.getElementById('closeBoxBtn').disabled = true;
+    document.getElementById('currentBoxNum').textContent = AppState.shipping.currentBox.num;
+    document.getElementById('qrContainer').classList.add('hidden');
+    document.getElementById('summaryBoxes').textContent = AppState.shipping.closedBoxes.length;
+    renderBoxHistory();
+    addVoiceLog(`Режим изменён на ${platform.toUpperCase()}. Максимум ${AppState.shipping.maxBoxesPerPallet} коробов на палет.`, 'ai');
 }
 
-function newChat() {
-  document.getElementById('msgWrap').innerHTML = '';
-  const ws = document.getElementById('welcomeScreen');
-  if (ws) ws.style.display = 'flex';
-  document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
-}
-
-function clearAll() {
-  newChat();
-}
-
-function selChat(el) {
-  document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
-  el.classList.add('active');
-}
-
-// Modal
-function openModal() {
-  document.getElementById('modelModal').classList.add('open');
-}
-
-function closeModal() {
-  document.getElementById('modelModal').classList.remove('open');
-}
-
-function pickModel(el, name) {
-  document.querySelectorAll('.m-option').forEach(o => o.classList.remove('active'));
-  el.classList.add('active');
-  model = name;
-  document.getElementById('modelLabel').textContent = name;
-  closeModal();
-}
-
-// Settings
-function toggleSettings() {
-  document.getElementById('settingsPanel').classList.toggle('open');
-}
-
-// Tools
-function attachFile() {
-  const inp = document.createElement('input');
-  inp.type = 'file';
-  inp.onchange = (e) => {
-    if (e.target.files[0]) {
-      document.getElementById('msgInput').value = `📎 ${e.target.files[0].name}\n\n`;
-      document.getElementById('msgInput').focus();
+function simulateShipScan() {
+    const input = document.getElementById('shipScanInput');
+    const sku = input.value.trim();
+    if (!sku) return addVoiceLog('Пожалуйста, отсканируйте штрих-код товара.', 'system');
+    
+    if (AppState.shipping.currentBox.closed) {
+        addVoiceLog('Текущий короб закрыт. Закройте его или создайте новый.', 'system');
+        return;
     }
-  };
-  inp.click();
+
+    AppState.shipping.currentBox.items++;
+    input.value = '';
+    input.focus();
+    updateBoxUI();
+    addVoiceLog(`Товар ${sku} добавлен. В коробе: ${AppState.shipping.currentBox.items}/${AppState.shipping.currentBox.capacity}`, 'system');
 }
 
-function voice() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { alert('Голосовой ввод не поддерживается'); return; }
-  const r = new SR();
-  r.lang = 'ru-RU';
-  r.interimResults = true;
-  r.onresult = (e) => {
-    let t = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript;
-    document.getElementById('msgInput').value = t;
-  };
-  r.start();
+function updateBoxUI() {
+    const box = AppState.shipping.currentBox;
+    const pct = Math.round((box.items / box.capacity) * 100);
+    document.getElementById('boxProgress').textContent = pct;
+    document.getElementById('boxProgressBar').style.width = `${pct}%`;
+    document.getElementById('closeBoxBtn').disabled = box.items < 10; // Allow close only after 10 items for demo
+    document.getElementById('summaryItems').textContent = box.items;
 }
 
-function copyMsg(btn) {
-  const txt = btn.closest('.msg-body').querySelector('.msg-text').textContent;
-  navigator.clipboard.writeText(txt);
-  btn.textContent = '✅ Готово';
-  setTimeout(() => btn.textContent = '📋 Копировать', 1500);
+function closeCurrentBox() {
+    const box = AppState.shipping.currentBox;
+    if (box.items === 0 || box.closed) return;
+    
+    box.closed = true;
+    AppState.shipping.closedBoxes.push({...box});
+    
+    // Check pallet constraint
+    const palletsNeeded = Math.ceil(AppState.shipping.closedBoxes.length / AppState.shipping.maxBoxesPerPallet);
+    document.getElementById('shipPallets').value = palletsNeeded;
+    document.getElementById('summaryPallets').textContent = palletsNeeded;
+    
+    // Generate QR
+    const qrDiv = document.getElementById('qrCanvas');
+    qrDiv.innerHTML = '';
+    new QRCode(qrDiv, `BOX-${AppState.shipping.platform.toUpperCase()}-${box.num}-${Date.now()}`);
+    document.getElementById('qrContainer').classList.remove('hidden');
+    
+    // Reset for next
+    box.num++;
+    AppState.shipping.currentBox = { num: box.num, items: 0, capacity: 50, closed: false };
+    updateBoxUI();
+    document.getElementById('currentBoxNum').textContent = AppState.shipping.currentBox.num;
+    
+    addVoiceLog(`Короб #${AppState.shipping.currentBox.num - 1} закрыт. QR сгенерирован. Готов к следующему.`, 'ai');
+    renderBoxHistory();
 }
 
-function regen() {
-  const msgs = document.querySelectorAll('#msgWrap .msg');
-  const last = msgs[msgs.length - 1];
-  if (last && last.classList.contains('ai')) {
-    last.remove();
-    const prev = msgs[msgs.length - 2];
-    if (prev) {
-      const txt = prev.querySelector('.msg-text').textContent;
-      busy = true;
-      document.getElementById('sendBtn').disabled = true;
+function renderBoxHistory() {
+    const tbody = document.getElementById('boxHistoryTable');
+    tbody.innerHTML = AppState.shipping.closedBoxes.map(b => `
+        <tr class="border-b border-slate-100"><td class="p-3">${b.num}</td><td class="p-3 text-xs text-slate-400">QR-${b.num}</td><td class="p-3">${b.items}</td><td class="p-3">${document.getElementById('shipPallets').value || 1}</td><td class="p-3"><span class="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs rounded">Закрыт</span></td></tr>
+    `).join('');
+}
 
-      const wrap = document.getElementById('msgWrap');
-      const typ = document.createElement('div');
-      typ.className = 'msg ai';
-      typ.innerHTML = `
-        <div class="msg-avatar">✦</div>
-        <div class="msg-body">
-          <div class="msg-top">
-            <span class="msg-sender">${model}</span>
-            <span class="msg-time">${now()}</span>
-          </div>
-          <div class="typing"><span></span><span></span><span></span></div>
-        </div>
-      `;
-      wrap.appendChild(typ);
-      scroll();
+function finalizeShipping() {
+    const city = document.getElementById('shipCity').value;
+    const pallets = parseInt(document.getElementById('shipPallets').value) || 1;
+    if(!city) return addVoiceLog('Укажите город получения!', 'system');
+    
+    AppState.recentOps.unshift({
+        date: new Date().toLocaleDateString('ru-RU'),
+        type: `Отгрузка ${AppState.shipping.platform.toUpperCase()}`,
+        id: `#SH-${Math.floor(Math.random()*900)+100}`,
+        items: AppState.shipping.closedBoxes.reduce((a,b)=>a+b.items,0),
+        status: 'Формируется'
+    });
+    
+    addVoiceLog(`Отгрузка в ${city} оформлена! ${AppState.shipping.closedBoxes.length} коробов, ${pallets} палетов. Документы готовы к печати.`, 'ai');
+    AppState.shipping.closedBoxes = [];
+    AppState.shipping.currentBox = { num: 1, items: 0, capacity: 50, closed: false };
+    updateBoxUI();
+    document.getElementById('qrContainer').classList.add('hidden');
+    document.getElementById('boxHistoryTable').innerHTML = '';
+    document.getElementById('summaryBoxes').textContent = 0;
+    document.getElementById('summaryItems').textContent = 0;
+}
 
-      sleep(800 + Math.random() * 800).then(() => {
-        typ.remove();
-        const resp = getResponse(txt);
-        const msg = addMsg('ai', '');
-        msg.querySelector('.msg-text').innerHTML = resp;
-        busy = false;
-        document.getElementById('sendBtn').disabled = false;
-      });
+// ================= INVENTORY LOGIC =================
+function startInventory() {
+    AppState.inventoryActive = true;
+    AppState.inventory = AppState.products.map(p => ({...p, actual: 0, diff: p.stock, status: 'Ожидает'}));
+    updateInvUI();
+    addVoiceLog('Инвентаризация запущена. Сканируйте товары и вводите фактический остаток.', 'ai');
+}
+
+function addInvItem() {
+    if(!AppState.inventoryActive) return addVoiceLog('Сначала начните инвентаризацию.', 'system');
+    const sku = document.getElementById('invScanInput').value.trim();
+    const count = parseInt(document.getElementById('invCountInput').value) || 0;
+    
+    const idx = AppState.inventory.findIndex(i => i.sku === sku);
+    if(idx === -1) return addVoiceLog('Товар не найден в базе ожидаемых.', 'system');
+    
+    AppState.inventory[idx].actual = count;
+    AppState.inventory[idx].diff = count - AppState.inventory[idx].expected;
+    AppState.inventory[idx].status = Math.abs(AppState.inventory[idx].diff) === 0 ? 'Сходится' : 'Расхождение';
+    
+    document.getElementById('invScanInput').value = '';
+    document.getElementById('invCountInput').value = '';
+    updateInvUI();
+    addVoiceLog(`Зафиксировано: ${AppState.inventory[idx].name}. Разница: ${AppState.inventory[idx].diff > 0 ? '+' : ''}${AppState.inventory[idx].diff}`, 'ai');
+}
+
+function updateInvUI() {
+    const tbody = document.getElementById('invTable');
+    tbody.innerHTML = AppState.inventory.map(i => `
+        <tr class="border-b border-slate-100"><td class="p-3">${i.sku}</td><td class="p-3">${i.name}</td><td class="p-3">${i.expected}</td><td class="p-3">${i.actual}</td>
+        <td class="p-3 ${i.diff<0?'text-rose-600 font-bold':i.diff>0?'text-emerald-600 font-bold':''}">${i.diff > 0 ? '+' : ''}${i.diff}</td>
+        <td class="p-3"><span class="px-2 py-1 rounded text-xs ${i.status==='Сходится'?'bg-emerald-100 text-emerald-700':'bg-amber-100 text-amber-700'}">${i.status}</span></td></tr>
+    `).join('');
+    
+    document.getElementById('invExpected').textContent = AppState.inventory.reduce((a,b)=>a+b.expected, 0);
+    document.getElementById('invActual').textContent = AppState.inventory.reduce((a,b)=>a+b.actual, 0);
+    document.getElementById('invDiff').textContent = document.getElementById('invActual').textContent - document.getElementById('invExpected').textContent;
+    const done = AppState.inventory.filter(i => i.status !== 'Ожидает').length;
+    document.getElementById('invProgress').textContent = `${Math.round((done/AppState.inventory.length)*100)}%`;
+}
+
+// ================= FINES LOGIC =================
+function renderFines() {
+    const tbody = document.getElementById('finesTable');
+    tbody.innerHTML = AppState.fines.map(f => `
+        <tr class="border-b border-slate-100"><td class="p-3">${f.date}</td><td class="p-3">${f.staff}</td><td class="p-3">${f.type}</td><td class="p-3">${f.reason}</td><td class="p-3 font-semibold">${f.amount}₽</td><td class="p-3 text-xs text-slate-500">${f.prevention}</td><td class="p-3"><button class="text-indigo-600 hover:underline">Подробнее</button></td></tr>
+    `).join('');
+}
+
+function addFine() {
+    const newFine = { date: new Date().toLocaleDateString('ru-RU'), staff: 'Не назначен', type: 'Новое нарушение', reason: 'Ожидает уточнения', amount: 0, prevention: 'Следуйте регламенту', status: 'В ожидании' };
+    AppState.fines.unshift(newFine);
+    renderFines();
+    addVoiceLog('Создан новый штраф. Заполните данные в таблице.', 'ai');
+}
+
+// ================= VOICE ASSISTANT =================
+function toggleVoiceUI() {
+    const panel = document.getElementById('voicePanel');
+    if (panel.classList.contains('opacity-0')) {
+        panel.classList.remove('opacity-0', 'translate-y-10');
+    } else {
+        panel.classList.add('opacity-0', 'translate-y-10');
     }
-  }
 }
 
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    closeModal();
-    document.getElementById('settingsPanel').classList.remove('open');
-  }
+function addVoiceLog(msg, sender) {
+    const log = document.getElementById('voiceLog');
+    const div = document.createElement('div');
+    div.className = sender === 'ai' ? 'bg-indigo-100 text-indigo-800 p-2 rounded-lg rounded-bl-none' : 'bg-white border border-slate-200 p-2 rounded-lg rounded-tr-none';
+    div.textContent = msg;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+}
+
+function startVoice() {
+    if (!('webkitSpeechRecognition' in window)) return addVoiceLog('Ваш браузер не поддерживает голосовой ввод. Используйте текстовое поле.', 'system');
+    
+    const recognition = new webkitSpeechRecognition();
+    recognition.lang = 'ru-RU';
+    recognition.start();
+    addVoiceLog('Слушаю... Говорите чётко.', 'system');
+    
+    recognition.onresult = e => {
+        const text = e.results[0][0].transcript;
+        document.getElementById('voiceTextInput').value = text;
+        handleVoiceInput();
+    };
+    recognition.onerror = e => addVoiceLog('Ошибка распознавания. Попробуйте снова.', 'system');
+}
+
+function handleVoiceInput() {
+    const input = document.getElementById('voiceTextInput');
+    const text = input.value.trim().toLowerCase();
+    if (!text) return;
+    
+    addVoiceLog(input.value, 'user');
+    input.value = '';
+    
+    let response = '';
+    if (text.includes('статус отгрузки') || text.includes('сколько отгрузок')) {
+        response = `Сегодня оформлено ${AppState.shipping.closedBoxes.length} коробов. Режим: ${AppState.shipping.platform.toUpperCase()}.`;
+    } else if (text.includes('где товар') || text.includes('остаток')) {
+        const item = AppState.products.find(p => text.includes(p.name.toLowerCase()) || text.includes(p.sku));
+        response = item ? `Товар ${item.name}. Остаток: ${item.stock} шт.` : 'Не нашёл такой товар в базе. Уточните название или ШК.';
+    } else if (text.includes('штраф') || text.includes('как избежать')) {
+        response = 'Основные штрафы: пересорт, порча, нарушение SLA, потеря товара. Всегда сканируйте ШК дважды, используйте наполнители, следите за таймером сборки.';
+    } else if (text.includes('инвентаризация')) {
+        startInventory();
+        response = 'Инвентаризация запущена. Начинайте сканирование ячеек.';
+    } else if (text.includes('отгрузка озон') || text.includes('озон')) {
+        switchShipping('ozon');
+        response = 'Переключено на отгрузку ОЗОН. Максимум 30 коробов на палет. Готов к сканированию.';
+    } else if (text.includes('отгрузка вб') || text.includes('wb')) {
+        switchShipping('wb');
+        response = 'Переключено на отгрузку ВБ. Максимум 192 коробов на палет. Готов к сканированию.';
+    } else {
+        response = 'Я могу помочь с: "статус отгрузки", "где товар", "штрафы", "начать инвентаризацию", "отгрузка озон/вб".';
+    }
+    
+    addVoiceLog(response, 'ai');
+    
+    // TTS
+    const utterance = new SpeechSynthesisUtterance(response);
+    utterance.lang = 'ru-RU';
+    window.speechSynthesis.speak(utterance);
+}
+
+document.getElementById('voiceToggle').addEventListener('click', toggleVoiceUI);
+document.addEventListener('DOMContentLoaded', () => {
+    renderFines();
+    updateDashboard();
 });
 </script>
 </body>
