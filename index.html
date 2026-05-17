@@ -1,584 +1,285 @@
+<?php
+// install.php
+header('Content-Type: text/html; charset=utf-8');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+?>
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FulFillPro — Система управления складом v3.2</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <title>Система этикеток ТЗ | Заказ №47</title>
+    <!-- Библиотеки для работы с Excel и Штрихкодами -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background: #f1f5f9; }
-        .sidebar-link { transition: all 0.2s; }
-        .sidebar-link:hover, .sidebar-link.active { background: #e0e7ff; color: #4338ca; border-right: 3px solid #4338ca; }
-        .glass-panel { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.5); }
-        .progress-fill { transition: width 0.4s ease-in-out; }
-        .voice-wave { animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } }
-        .qr-canvas canvas { width: 100% !important; height: auto !important; }
-        .hidden { display: none !important; }
-        .fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .scrollbar-thin::-webkit-scrollbar { width: 6px; }
-        .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-        .scrollbar-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        :root { --primary: #2563eb; --bg: #f8fafc; --border: #cbd5e1; --text: #0f172a; --success: #16a34a; }
+        * { box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--text); }
+        .container { max-width: 1600px; margin: 0 auto; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        h1 { margin: 0 0 15px 0; color: #0f172a; border-bottom: 2px solid var(--border); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .upload-box { border: 2px dashed var(--border); padding: 40px; text-align: center; border-radius: 10px; margin-bottom: 20px; background: #f1f5f9; cursor: pointer; transition: 0.2s; }
+        .upload-box:hover { background: #e2e8f0; border-color: var(--primary); }
+        .controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; padding: 12px; background: #f8fafc; border-radius: 8px; align-items: center; }
+        input, select, button { padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+        button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: 500; transition: 0.2s; }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        button.secondary { background: #64748b; }
+        button.success { background: var(--success); }
+        .table-wrap { overflow-x: auto; max-height: 60vh; border: 1px solid var(--border); border-radius: 8px; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
+        th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: #f1f5f9; position: sticky; top: 0; z-index: 10; font-weight: 600; }
+        td[contenteditable="true"]:focus { background: #e0f2fe; outline: 2px solid var(--primary); border-radius: 4px; }
+        .stats { font-size: 14px; color: #475569; margin: 8px 0; display: flex; gap: 15px; }
+        .badge { background: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-weight: 500; }
+        
+        /* Настройки печати */
+        @media print {
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { position: absolute; left: 0; top: 0; width: 100%; height: auto; }
+            .label-grid { display: grid; grid-template-columns: repeat(2, 100mm); grid-auto-rows: 60mm; gap: 3mm; padding: 5mm; }
+            .label { border: 1px dashed #999; padding: 4mm 5mm; box-sizing: border-box; font-family: Arial, sans-serif; display: flex; flex-direction: column; justify-content: space-between; page-break-inside: avoid; background: white; overflow: hidden; }
+            .label .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2mm; }
+            .label .sku { font-size: 15px; font-weight: bold; color: #000; }
+            .label .barcode svg { max-width: 90%; height: auto; }
+            .label .expiry { font-size: 12px; color: #444; font-weight: 500; margin-top: 1mm; }
+            .label .name { font-size: 11px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+            .label .tz { font-size: 9px; color: #666; margin-top: auto; font-style: italic; border-top: 1px dotted #eee; padding-top: 2px; }
+            @page { size: A4; margin: 0; }
+            .no-print { display: none !important; }
+        }
     </style>
 </head>
-<body class="text-slate-800">
-
-<div id="loginScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-indigo-900 to-slate-900">
-    <div class="w-full max-w-md bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 text-white">
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold tracking-tight">FulFillPro</h1>
-            <p class="text-indigo-200 mt-1">Система управления складом v3.2</p>
+<body>
+    <div class="container">
+        <h1 class="no-print">📦 Система этикеток ТЗ <span style="font-size:14px; font-weight:normal; color:#64748b;">v2.0 | Под заказ №47</span></h1>
+        
+        <div class="upload-box no-print" onclick="document.getElementById('fileInput').click()">
+            <p style="margin:0 0 10px 0; font-weight:500;">📎 Перетащите файл .xlsx или нажмите для выбора</p>
+            <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none">
+            <small>Автоматически пропускает шапку, очищает #N/A, парсит русские числа</small>
         </div>
-        <form id="loginForm" class="space-y-4">
-            <input type="text" id="loginUser" placeholder="Логин" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-indigo-400 focus:outline-none text-white placeholder-white/50" value="admin">
-            <input type="password" id="loginPass" placeholder="Пароль" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-indigo-400 focus:outline-none text-white placeholder-white/50" value="admin123">
-            <div class="flex items-center justify-between text-sm text-indigo-200">
-                <label class="flex items-center cursor-pointer"><input type="checkbox" class="mr-2 accent-indigo-500"> Запомнить меня</label>
+
+        <div id="editor" style="display:none;">
+            <div class="controls no-print">
+                <input type="text" id="filterText" placeholder="🔍 Артикул, ШК, Наименование, ТЗ...">
+                <input type="number" id="filterQty" placeholder="📦 Мин. спаек" min="0" step="1">
+                <button onclick="applyFilters()">Применить</button>
+                <button class="secondary" onclick="resetFilters()">Сброс</button>
+                <button class="success" onclick="generateLabels()">🖨️ Сформировать этикетки</button>
+                <button class="secondary" onclick="exportCSV()">📥 Экспорт CSV</button>
             </div>
-            <button type="submit" class="w-full py-3 bg-indigo-500 hover:bg-indigo-600 rounded-lg font-semibold transition shadow-lg shadow-indigo-500/30">Войти</button>
-        </form>
-        <div class="mt-6 text-center text-xs text-indigo-300">Демо: admin / admin123</div>
-    </div>
-</div>
-
-<div id="app" class="hidden flex h-screen overflow-hidden bg-slate-50">
-    <aside class="w-64 bg-white border-r border-slate-200 flex flex-col z-20">
-        <div class="p-6 border-b border-slate-100">
-            <h2 class="text-xl font-bold text-indigo-700 tracking-wide">FulFillPro</h2>
-            <span class="text-xs text-slate-400">Склад v3.2 • <span class="text-emerald-500">●</span> Онлайн</span>
-        </div>
-        <nav class="flex-1 overflow-y-auto py-4 scrollbar-thin" id="mainNav">
-            <button data-target="dashboard" class="sidebar-link active w-full flex items-center px-6 py-3 text-slate-600 hover:text-indigo-700 font-medium"><i class="ri-dashboard-line mr-3"></i> Дашборд</button>
-            <button data-target="shipping" class="sidebar-link w-full flex items-center px-6 py-3 text-slate-600 hover:text-indigo-700 font-medium"><i class="ri-truck-line mr-3"></i> Отгрузка</button>
-            <button data-target="inventory" class="sidebar-link w-full flex items-center px-6 py-3 text-slate-600 hover:text-indigo-700 font-medium"><i class="ri-file-list-3-line mr-3"></i> Инвентаризация</button>
-            <button data-target="fines" class="sidebar-link w-full flex items-center px-6 py-3 text-slate-600 hover:text-indigo-700 font-medium"><i class="ri-coin-line mr-3"></i> Штрафы</button>
-            <button data-target="products" class="sidebar-link w-full flex items-center px-6 py-3 text-slate-600 hover:text-indigo-700 font-medium"><i class="ri-box-3-line mr-3"></i> Товары</button>
-            <button data-target="receiving" class="sidebar-link w-full flex items-center px-6 py-3 text-slate-600 hover:text-indigo-700 font-medium"><i class="ri-scan-line mr-3"></i> Приёмка ТСД</button>
-            <button data-target="employees" class="sidebar-link w-full flex items-center px-6 py-3 text-slate-600 hover:text-indigo-700 font-medium"><i class="ri-group-line mr-3"></i> Сотрудники</button>
-            <button data-target="tasks" class="sidebar-link w-full flex items-center px-6 py-3 text-slate-600 hover:text-indigo-700 font-medium"><i class="ri-todo-line mr-3"></i> Задачи</button>
-            <button data-target="clients" class="sidebar-link w-full flex items-center px-6 py-3 text-slate-600 hover:text-indigo-700 font-medium"><i class="ri-building-line mr-3"></i> Клиенты</button>
-            <button data-target="settings" class="sidebar-link w-full flex items-center px-6 py-3 text-slate-600 hover:text-indigo-700 font-medium"><i class="ri-settings-4-line mr-3"></i> Настройки</button>
-        </nav>
-        <div class="p-4 border-t border-slate-100 flex items-center gap-3">
-            <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">АД</div>
-            <div><div class="text-sm font-medium">Админ</div><div class="text-xs text-slate-400">Супервайзер</div></div>
-        </div>
-    </aside>
-
-    <main class="flex-1 flex flex-col overflow-hidden relative">
-        <header class="h-16 bg-white/80 backdrop-blur border-b border-slate-200 flex items-center justify-between px-6">
-            <h2 id="pageTitle" class="text-lg font-semibold text-slate-800">Дашборд</h2>
-            <div class="flex items-center gap-4">
-                <button id="voiceToggle" class="p-2 rounded-full hover:bg-slate-100 text-slate-500 transition" title="Голосовой помощник">
-                    <i class="ri-mic-line text-xl"></i>
-                </button>
-                <div class="relative">
-                    <i class="ri-notification-3-line text-xl text-slate-500"></i>
-                    <span class="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full"></span>
-                </div>
+            <div class="stats no-print">
+                <span id="statsTotal">Всего: 0</span>
+                <span id="statsFiltered">Показано: 0</span>
+                <span id="statsLabels">Этикеток: 0</span>
+                <span class="badge" id="orderMeta"></span>
             </div>
-        </header>
-
-        <div id="contentArea" class="flex-1 overflow-y-auto p-6 scrollbar-thin">
-            <!-- DASHBOARD -->
-            <section id="dashboard" class="fade-in space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                        <div class="text-slate-500 text-sm">Товары на складе</div>
-                        <div class="text-3xl font-bold text-indigo-700 mt-2" id="dashTotalItems">0</div>
-                        <div class="text-xs text-emerald-600 mt-1">▲ +12% за неделю</div>
-                    </div>
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                        <div class="text-slate-500 text-sm">Приёмки сегодня</div>
-                        <div class="text-3xl font-bold text-amber-600 mt-2" id="dashReceiving">0</div>
-                    </div>
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                        <div class="text-slate-500 text-sm">Отгрузки сегодня</div>
-                        <div class="text-3xl font-bold text-blue-600 mt-2" id="dashShipping">0</div>
-                    </div>
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                        <div class="text-slate-500 text-sm">Сотрудники онлайн</div>
-                        <div class="text-3xl font-bold text-emerald-600 mt-2"><span id="dashOnline">0</span> / <span id="dashTotalStaff">0</span></div>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 lg:col-span-2">
-                        <h3 class="font-semibold mb-4">Движение товара за 7 дней</h3>
-                        <canvas id="movementChart" height="120"></canvas>
-                    </div>
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                        <h3 class="font-semibold mb-4">Заполненность склада</h3>
-                        <canvas id="occupancyChart" height="120"></canvas>
-                    </div>
-                </div>
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                    <h3 class="font-semibold mb-4">Последние операции</h3>
-                    <div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead class="bg-slate-50 text-slate-500"><tr><th class="p-3">Дата</th><th class="p-3">Тип</th><th class="p-3">ID</th><th class="p-3">Товаров</th><th class="p-3">Статус</th></tr></thead><tbody id="recentOpsTable"></tbody></table></div>
-                </div>
-            </section>
-
-            <!-- SHIPPING (OZON & WB) -->
-            <section id="shipping" class="hidden fade-in space-y-6">
-                <div class="flex space-x-4 border-b border-slate-200 pb-2">
-                    <button class="px-4 py-2 text-indigo-700 font-semibold border-b-2 border-indigo-600" onclick="switchShipping('ozon')">Отгрузка ОЗОН</button>
-                    <button class="px-4 py-2 text-slate-500 hover:text-indigo-700" onclick="switchShipping('wb')">Отгрузка ВБ</button>
-                </div>
-                
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold text-lg" id="shippingTitle">Отгрузка ОЗОН</h3>
-                            <span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded" id="shippingPlatformTag">OZON FBS</span>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4 mb-4">
-                            <div><label class="block text-sm text-slate-500 mb-1">Город получения</label><input type="text" id="shipCity" placeholder="Москва" class="w-full p-2 border rounded"></div>
-                            <div><label class="block text-sm text-slate-500 mb-1">Паллет (макс <span id="maxBoxPerPallet">30</span> коробов)</label><input type="number" id="shipPallets" value="1" class="w-full p-2 border rounded"></div>
-                        </div>
-                        
-                        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 mb-4">
-                            <div class="flex gap-2 mb-3">
-                                <input type="text" id="shipScanInput" placeholder="Сканируйте ШК товара (Enter)" class="flex-1 p-2 border rounded focus:ring-2 focus:ring-indigo-300 outline-none">
-                                <button onclick="simulateShipScan()" class="px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700">Добавить</button>
-                            </div>
-                            <div class="flex items-center justify-between text-sm text-slate-600 mb-2">
-                                <span>Текущий короб: <b id="currentBoxNum">1</b> (60x40x40)</span>
-                                <span>Заполнено: <b id="boxProgress">0</b>%</span>
-                            </div>
-                            <div class="w-full bg-slate-200 rounded-full h-2.5 mb-3"><div id="boxProgressBar" class="progress-fill bg-indigo-500 h-2.5 rounded-full" style="width: 0%"></div></div>
-                            <button onclick="closeCurrentBox()" id="closeBoxBtn" class="w-full py-2 border-2 border-slate-300 text-slate-500 rounded hover:border-indigo-500 hover:text-indigo-600 disabled:opacity-50" disabled>Закрыть короб и перейти к следующему</button>
-                        </div>
-
-                        <div id="qrContainer" class="hidden text-center p-4 border-2 border-dashed border-slate-300 rounded-lg">
-                            <p class="text-sm text-slate-500 mb-2">QR-код сгенерирован автоматически</p>
-                            <div id="qrCanvas" class="inline-block qr-canvas mb-2"></div>
-                            <div class="text-xs text-slate-400">Прикрепите к коробу</div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                        <h3 class="font-bold mb-4">Сводка отгрузки</h3>
-                        <div class="space-y-4">
-                            <div class="flex justify-between p-3 bg-slate-50 rounded"><span class="text-slate-500">Город</span><span class="font-medium" id="summaryCity">—</span></div>
-                            <div class="flex justify-between p-3 bg-slate-50 rounded"><span class="text-slate-500">Коробов</span><span class="font-medium" id="summaryBoxes">0</span></div>
-                            <div class="flex justify-between p-3 bg-slate-50 rounded"><span class="text-slate-500">Товаров</span><span class="font-medium" id="summaryItems">0</span></div>
-                            <div class="flex justify-between p-3 bg-slate-50 rounded"><span class="text-slate-500">Палетов</span><span class="font-medium" id="summaryPallets">0</span></div>
-                        </div>
-                        <button onclick="finalizeShipping()" class="w-full mt-4 py-3 bg-emerald-600 text-white rounded hover:bg-emerald-700 font-medium">Завершить отгрузку</button>
-                    </div>
-                </div>
-
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                    <h3 class="font-semibold mb-3">История коробов</h3>
-                    <div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead class="bg-slate-50 text-slate-500"><tr><th class="p-3">№ Короба</th><th class="p-3">QR</th><th class="p-3">Товаров</th><th class="p-3">Палет</th><th class="p-3">Статус</th></tr></thead><tbody id="boxHistoryTable"></tbody></table></div>
-                </div>
-            </section>
-
-            <!-- INVENTORY -->
-            <section id="inventory" class="hidden fade-in space-y-6">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-xl font-bold">Инвентаризация</h3>
-                    <div class="flex gap-2">
-                        <button onclick="startInventory()" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Начать новую</button>
-                        <button onclick="exportInventory()" class="px-4 py-2 border border-slate-300 rounded hover:bg-slate-50">Экспорт</button>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div class="bg-white p-4 rounded-lg border border-slate-200"><div class="text-sm text-slate-500">Ожидаемо</div><div class="text-2xl font-bold" id="invExpected">0</div></div>
-                    <div class="bg-white p-4 rounded-lg border border-slate-200"><div class="text-sm text-slate-500">Фактически</div><div class="text-2xl font-bold" id="invActual">0</div></div>
-                    <div class="bg-white p-4 rounded-lg border border-slate-200"><div class="text-sm text-slate-500">Расхождение</div><div class="text-2xl font-bold text-rose-600" id="invDiff">0</div></div>
-                    <div class="bg-white p-4 rounded-lg border border-slate-200"><div class="text-sm text-slate-500">Прогресс</div><div class="text-2xl font-bold text-emerald-600" id="invProgress">0%</div></div>
-                </div>
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                    <div class="flex gap-2 mb-4">
-                        <input type="text" id="invScanInput" placeholder="Сканируйте ШК товара" class="flex-1 p-2 border rounded">
-                        <input type="number" id="invCountInput" placeholder="Кол-во" class="w-24 p-2 border rounded">
-                        <button onclick="addInvItem()" class="px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700">Фиксировать</button>
-                    </div>
-                    <div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead class="bg-slate-50 text-slate-500"><tr><th class="p-3">Артикул</th><th class="p-3">Название</th><th class="p-3">Ожид.</th><th class="p-3">Факт</th><th class="p-3">Δ</th><th class="p-3">Статус</th></tr></thead><tbody id="invTable"></tbody></table></div>
-                </div>
-            </section>
-
-            <!-- FINES -->
-            <section id="fines" class="hidden fade-in space-y-6">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-xl font-bold">Штрафы и нарушения</h3>
-                    <button onclick="addFine()" class="px-4 py-2 bg-rose-600 text-white rounded hover:bg-rose-700">+ Новый штраф</button>
-                </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-4">
-                    <h4 class="font-semibold mb-3 text-slate-700">📋 Справочник штрафов фулфилмента</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-                        <div class="p-3 bg-rose-50 rounded border border-rose-100"><p class="font-medium text-rose-800">1. Пересорт / Ошибка сборки</p><p class="text-slate-600 mt-1">Штраф: 500-2000₽. Как избежать: Двойная проверка ШК перед упаковкой, сверка с заказом.</p></div>
-                        <div class="p-3 bg-rose-50 rounded border border-rose-100"><p class="font-medium text-rose-800">2. Порча товара при упаковке</p><p class="text-slate-600 mt-1">Штраф: Стоимость товара. Как избежать: Использование правильных наполнителей, контроль давления на хрупкое.</p></div>
-                        <div class="p-3 bg-rose-50 rounded border border-rose-100"><p class="font-medium text-rose-800">3. Невложение документов/инструкций</p><p class="text-slate-600 mt-1">Штраф: 300-1000₽. Как избежать: Чек-лист вложенных листов, автопринтер этикеток.</p></div>
-                        <div class="p-3 bg-rose-50 rounded border border-rose-100"><p class="font-medium text-rose-800">4. Превышение срока сборки (SLA)</p><p class="text-slate-600 mt-1">Штраф: от 100₽/час задержки. Как избежать: Таймер на ТСД, приоритизация срочных заказов.</p></div>
-                        <div class="p-3 bg-rose-50 rounded border border-rose-100"><p class="font-medium text-rose-800">5. Потеря товара на складе (утеря)</p><p class="text-slate-600 mt-1">Штраф: До 5000₽. Как избежать: Строгая адресная система, регулярные микро-инвентаризации.</p></div>
-                        <div class="p-3 bg-rose-50 rounded border border-rose-100"><p class="font-medium text-rose-800">6. Нарушение маркировки/КИЗ</p><p class="text-slate-600 mt-1">Штраф: По закону РФ/оферты МП. Как избежать: Сканирование Честного Знака до упаковки, валидация кодов.</p></div>
-                    </div>
-                </div>
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                    <div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead class="bg-slate-50 text-slate-500"><tr><th class="p-3">Дата</th><th class="p-3">Сотрудник</th><th class="p-3">Тип</th><th class="p-3">Причина</th><th class="p-3">Сумма</th><th class="p-3">Как избежать</th><th class="p-3">Действия</th></tr></thead><tbody id="finesTable"></tbody></table></div>
-                </div>
-            </section>
-
-            <!-- OTHER SECTIONS PLACEHOLDERS -->
-            <section id="products" class="hidden fade-in space-y-4"><h3 class="text-xl font-bold">Товары</h3><div class="bg-white p-6 rounded-xl border border-slate-200">Таблица товаров и управление...</div></section>
-            <section id="receiving" class="hidden fade-in space-y-4"><h3 class="text-xl font-bold">Приёмка ТСД</h3><div class="bg-white p-6 rounded-xl border border-slate-200">Сканирование и оприходование...</div></section>
-            <section id="employees" class="hidden fade-in space-y-4"><h3 class="text-xl font-bold">Сотрудники</h3><div class="bg-white p-6 rounded-xl border border-slate-200">Посещаемость и график...</div></section>
-            <section id="tasks" class="hidden fade-in space-y-4"><h3 class="text-xl font-bold">Задачи</h3><div class="bg-white p-6 rounded-xl border border-slate-200">Канбан и распределение...</div></section>
-            <section id="clients" class="hidden fade-in space-y-4"><h3 class="text-xl font-bold">Клиенты</h3><div class="bg-white p-6 rounded-xl border border-slate-200">База контрагентов...</div></section>
-            <section id="settings" class="hidden fade-in space-y-4"><h3 class="text-xl font-bold">Настройки</h3><div class="bg-white p-6 rounded-xl border border-slate-200">Параметры системы и интеграции...</div></section>
+            <div class="table-wrap">
+                <table id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
-    </main>
-</div>
 
-<!-- Voice Assistant -->
-<div id="voiceAssistant" class="fixed bottom-6 right-6 z-40 hidden">
-    <div class="w-80 bg-white/95 backdrop-blur shadow-2xl rounded-2xl border border-slate-200 overflow-hidden transition-all duration-300 transform translate-y-10 opacity-0" id="voicePanel">
-        <div class="bg-indigo-600 p-4 text-white flex justify-between items-center">
-            <span class="font-semibold">Голосовой помощник</span>
-            <button onclick="toggleVoiceUI()" class="text-white/80 hover:text-white"><i class="ri-close-line"></i></button>
-        </div>
-        <div id="voiceLog" class="p-4 h-64 overflow-y-auto space-y-2 bg-slate-50 text-sm">
-            <div class="text-slate-400 text-center text-xs mt-4">Привет! Я ваш ИИ-ассистент по складу. Спросите: "Статус отгрузки", "Где товар", "Как избежать штрафов", "Начать инвентаризацию".</div>
-        </div>
-        <div class="p-3 border-t border-slate-200 bg-white flex gap-2">
-            <button id="micBtn" onclick="startVoice()" class="flex-1 bg-indigo-100 text-indigo-700 py-2 rounded-lg hover:bg-indigo-200 flex items-center justify-center gap-2"><i class="ri-mic-fill"></i> Говорить</button>
-            <input type="text" id="voiceTextInput" placeholder="Или введите текст..." class="flex-1 border border-slate-300 rounded-lg px-3 text-sm outline-none focus:border-indigo-400" onkeydown="if(event.key==='Enter')handleVoiceInput()">
-            <button onclick="handleVoiceInput()" class="bg-indigo-600 text-white px-3 rounded-lg hover:bg-indigo-700"><i class="ri-send-plane-fill"></i></button>
+        <div id="print-area" class="no-print">
+            <div class="label-grid" id="labelGrid"></div>
         </div>
     </div>
-    <button onclick="toggleVoiceUI()" class="w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition voice-wave"><i class="ri-mic-line text-2xl"></i></button>
-</div>
 
-<script>
-// ================= STATE & DATA =================
-const AppState = {
-    isLoggedIn: false,
-    currentTab: 'dashboard',
-    products: [
-        {id: 'P001', sku: '789123456789', name: 'Беспроводные наушники', stock: 145, expected: 150},
-        {id: 'P002', sku: '456789123456', name: 'Чехол iPhone 14', stock: 320, expected: 300},
-        {id: 'P003', sku: '321654987321', name: 'Умная колонка', stock: 56, expected: 60}
-    ],
-    shipping: {
-        platform: 'ozon',
-        city: '',
-        currentBox: { num: 1, items: 0, capacity: 50, closed: false },
-        closedBoxes: [],
-        totalPallets: 0,
-        maxBoxesPerPallet: 30
-    },
-    fines: [
-        {date: '2023-10-25', staff: 'Иванов А.', type: 'Пересорт', reason: 'Неверный артикул в заказе #882', amount: 1500, prevention: 'Двойная проверка ШК', status: 'Оплачен'},
-        {date: '2023-10-28', staff: 'Петрова С.', type: 'Порча', reason: 'Разбито стекло при упаковке', amount: 2200, prevention: 'Использовать пупырчатую плёнку', status: 'В ожидании'}
-    ],
-    inventory: [],
-    inventoryActive: false,
-    recentOps: [
-        {date: '2023-10-29', type: 'Приёмка', id: '#PR-112', items: 45, status: 'Завершено'},
-        {date: '2023-10-29', type: 'Отгрузка OZON', id: '#SH-089', items: 120, status: 'В пути'}
-    ]
-};
+    <script>
+        let rawData = [];
+        let filteredData = [];
+        let headerRow = [];
+        const COL_MAP = {
+            art_wb: 'Артикул ВБ', name: 'наименование составляющего в наборе', art_orig: 'Исходный артикул (арт штуки)',
+            sku_orig: 'ШК исход. штуки', sku_label: 'ШК на этикетку ВБ', art_label: 'Артикул на этикетку ВБ',
+            quant: 'квант спайки', qty_ship: 'ИТОГО К ОТГРУЗКЕ спаек', qty_total: 'ИТОГО, шт.',
+            expiry: 'ГОДЕН ДО', tz: 'ТЗ', boxes: 'коробов', sku_box: 'спаек в коробе', items_box: 'штук в коробе', comment: 'Комментарий'
+        };
 
-// ================= UTILS =================
-function switchTab(tab) {
-    document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
-    document.getElementById(tab).classList.remove('hidden');
-    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-    document.querySelector(`[data-target="${tab}"]`).classList.add('active');
-    document.getElementById('pageTitle').textContent = document.querySelector(`[data-target="${tab}"]`).textContent.trim();
-    AppState.currentTab = tab;
-    updateDashboard();
-}
+        document.getElementById('fileInput').addEventListener('change', handleFile);
 
-document.getElementById('mainNav').addEventListener('click', e => {
-    const btn = e.target.closest('.sidebar-link');
-    if(btn) switchTab(btn.dataset.target);
-});
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const wb = XLSX.read(ev.target.result, { type: 'array' });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                processData(json);
+            };
+            reader.readAsArrayBuffer(file);
+        }
 
-// ================= LOGIN =================
-document.getElementById('loginForm').addEventListener('submit', e => {
-    e.preventDefault();
-    AppState.isLoggedIn = true;
-    document.getElementById('loginScreen').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-    document.getElementById('voiceAssistant').classList.remove('hidden');
-    updateDashboard();
-    initCharts();
-});
+        function processData(sheet) {
+            // 1. Находим строку заголовков (ищем "Артикул ВБ")
+            let headerIdx = sheet.findIndex(r => r.some(c => String(c).includes('Артикул ВБ')));
+            if (headerIdx === -1) return alert('Не найдена строка заголовков "Артикул ВБ"');
+            
+            headerRow = sheet[headerIdx].map(h => String(h).trim());
+            const colIndices = {};
+            Object.values(COL_MAP).forEach(colName => {
+                colIndices[colName] = headerRow.findIndex(h => h === colName);
+            });
 
-// ================= DASHBOARD =================
-function updateDashboard() {
-    document.getElementById('dashTotalItems').textContent = AppState.products.reduce((a,b)=>a+b.stock, 0);
-    document.getElementById('dashReceiving').textContent = 12; // Mock
-    document.getElementById('dashShipping').textContent = AppState.shipping.closedBoxes.length;
-    document.getElementById('dashOnline').textContent = 8;
-    document.getElementById('dashTotalStaff').textContent = 15;
-    
-    const tbody = document.getElementById('recentOpsTable');
-    tbody.innerHTML = AppState.recentOps.map(op => `
-        <tr class="border-b border-slate-100 hover:bg-slate-50">
-            <td class="p-3">${op.date}</td><td class="p-3">${op.type}</td><td class="p-3 font-mono">${op.id}</td><td class="p-3">${op.items}</td>
-            <td class="p-3"><span class="px-2 py-1 rounded text-xs ${op.status==='Завершено'?'bg-emerald-100 text-emerald-700':'bg-amber-100 text-amber-700'}">${op.status}</span></td>
-        </tr>
-    `).join('');
-}
+            // 2. Извлекаем данные, пропуская шапку и пустые строки
+            rawData = [];
+            for (let i = headerIdx + 1; i < sheet.length; i++) {
+                const row = sheet[i];
+                if (!row.some(v => v !== '' && v !== null && String(v).trim() !== '')) continue;
+                // Остановка на итоговой строке с суммами
+                if (row.some(v => String(v).includes('ИТОГО') && String(v).includes(','))) break; 
 
-function initCharts() {
-    new Chart(document.getElementById('movementChart'), {
-        type: 'line',
-        data: { labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'], datasets: [{ label: 'Приёмка', data: [12, 19, 8, 15, 22, 10, 5], borderColor: '#3b82f6', tension: 0.4 }, { label: 'Отгрузка', data: [8, 12, 15, 18, 25, 14, 9], borderColor: '#10b981', tension: 0.4 }] },
-        options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
-    });
-    new Chart(document.getElementById('occupancyChart'), {
-        type: 'doughnut',
-        data: { labels: ['Занято', 'Свободно'], datasets: [{ data: [72, 28], backgroundColor: ['#6366f1', '#e2e8f0'], borderWidth: 0 }] },
-        options: { cutout: '70%', plugins: { legend: { position: 'bottom' } } }
-    });
-}
+                const obj = {};
+                Object.keys(COL_MAP).forEach(key => {
+                    const idx = colIndices[COL_MAP[key]];
+                    let val = idx !== -1 && row[idx] !== undefined ? row[idx] : '';
+                    obj[key] = cleanValue(val, key);
+                });
+                rawData.push(obj);
+            }
 
-// ================= SHIPPING LOGIC =================
-function switchShipping(platform) {
-    AppState.shipping.platform = platform;
-    AppState.shipping.maxBoxesPerPallet = platform === 'ozon' ? 30 : 192;
-    AppState.shipping.currentBox = { num: AppState.shipping.closedBoxes.length + 1, items: 0, capacity: 50, closed: false };
-    
-    document.getElementById('shippingTitle').textContent = platform === 'ozon' ? 'Отгрузка ОЗОН' : 'Отгрузка ВБ';
-    document.getElementById('shippingPlatformTag').textContent = platform === 'ozon' ? 'OZON FBS' : 'WB FBO';
-    document.getElementById('maxBoxPerPallet').textContent = AppState.shipping.maxBoxesPerPallet;
-    document.getElementById('boxProgress').textContent = 0;
-    document.getElementById('boxProgressBar').style.width = '0%';
-    document.getElementById('closeBoxBtn').disabled = true;
-    document.getElementById('currentBoxNum').textContent = AppState.shipping.currentBox.num;
-    document.getElementById('qrContainer').classList.add('hidden');
-    document.getElementById('summaryBoxes').textContent = AppState.shipping.closedBoxes.length;
-    renderBoxHistory();
-    addVoiceLog(`Режим изменён на ${platform.toUpperCase()}. Максимум ${AppState.shipping.maxBoxesPerPallet} коробов на палет.`, 'ai');
-}
+            // Мета-информация из шапки
+            const meta = extractMeta(sheet);
+            document.getElementById('orderMeta').textContent = meta || '';
 
-function simulateShipScan() {
-    const input = document.getElementById('shipScanInput');
-    const sku = input.value.trim();
-    if (!sku) return addVoiceLog('Пожалуйста, отсканируйте штрих-код товара.', 'system');
-    
-    if (AppState.shipping.currentBox.closed) {
-        addVoiceLog('Текущий короб закрыт. Закройте его или создайте новый.', 'system');
-        return;
-    }
+            renderTable(rawData);
+            document.getElementById('editor').style.display = 'block';
+        }
 
-    AppState.shipping.currentBox.items++;
-    input.value = '';
-    input.focus();
-    updateBoxUI();
-    addVoiceLog(`Товар ${sku} добавлен. В коробе: ${AppState.shipping.currentBox.items}/${AppState.shipping.currentBox.capacity}`, 'system');
-}
+        function cleanValue(val, key) {
+            let v = String(val).trim();
+            // Очистка артефактов Excel
+            if (v.includes('ERROR:') || v.includes('#N/A') || v.includes('#REF!')) return '';
+            // Числа с запятой как разделитель тысяч (2,550 -> 2550)
+            if (key === 'qty_ship' || key === 'qty_total' || key === 'boxes' || key === 'sku_box' || key === 'items_box') {
+                return v.replace(/\s/g, '').replace(/,/g, '');
+            }
+            return v;
+        }
 
-function updateBoxUI() {
-    const box = AppState.shipping.currentBox;
-    const pct = Math.round((box.items / box.capacity) * 100);
-    document.getElementById('boxProgress').textContent = pct;
-    document.getElementById('boxProgressBar').style.width = `${pct}%`;
-    document.getElementById('closeBoxBtn').disabled = box.items < 10; // Allow close only after 10 items for demo
-    document.getElementById('summaryItems').textContent = box.items;
-}
+        function extractMeta(sheet) {
+            const firstRows = sheet.slice(0, 5).flat().join(' ');
+            const matchDate = firstRows.match(/Отгрузка:\s*(\d{2}\.\d{2}\.\d{4})/);
+            const matchClient = firstRows.match(/Заказчик\s*(.{2,50}?)(?=Тип|Отгрузка|$)/);
+            return matchDate ? `📅 ${matchDate[1]}` + (matchClient ? ` | 🏢 ${matchClient[1].trim()}` : '') : '';
+        }
 
-function closeCurrentBox() {
-    const box = AppState.shipping.currentBox;
-    if (box.items === 0 || box.closed) return;
-    
-    box.closed = true;
-    AppState.shipping.closedBoxes.push({...box});
-    
-    // Check pallet constraint
-    const palletsNeeded = Math.ceil(AppState.shipping.closedBoxes.length / AppState.shipping.maxBoxesPerPallet);
-    document.getElementById('shipPallets').value = palletsNeeded;
-    document.getElementById('summaryPallets').textContent = palletsNeeded;
-    
-    // Generate QR
-    const qrDiv = document.getElementById('qrCanvas');
-    qrDiv.innerHTML = '';
-    new QRCode(qrDiv, `BOX-${AppState.shipping.platform.toUpperCase()}-${box.num}-${Date.now()}`);
-    document.getElementById('qrContainer').classList.remove('hidden');
-    
-    // Reset for next
-    box.num++;
-    AppState.shipping.currentBox = { num: box.num, items: 0, capacity: 50, closed: false };
-    updateBoxUI();
-    document.getElementById('currentBoxNum').textContent = AppState.shipping.currentBox.num;
-    
-    addVoiceLog(`Короб #${AppState.shipping.currentBox.num - 1} закрыт. QR сгенерирован. Готов к следующему.`, 'ai');
-    renderBoxHistory();
-}
+        function parseQty(val) {
+            return Math.ceil(parseFloat(String(val).replace(/\s/g, '').replace(/,/g, '.')) || 0);
+        }
 
-function renderBoxHistory() {
-    const tbody = document.getElementById('boxHistoryTable');
-    tbody.innerHTML = AppState.shipping.closedBoxes.map(b => `
-        <tr class="border-b border-slate-100"><td class="p-3">${b.num}</td><td class="p-3 text-xs text-slate-400">QR-${b.num}</td><td class="p-3">${b.items}</td><td class="p-3">${document.getElementById('shipPallets').value || 1}</td><td class="p-3"><span class="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs rounded">Закрыт</span></td></tr>
-    `).join('');
-}
+        function renderTable(data) {
+            const thead = document.querySelector('#dataTable thead');
+            const tbody = document.querySelector('#dataTable tbody');
+            thead.innerHTML = '<tr>' + headerRow.map(h => `<th>${h}</th>`).join('') + '</tr>';
+            tbody.innerHTML = data.map((row, i) => {
+                const idx = rawData.indexOf(row);
+                return '<tr>' + headerRow.map(h => {
+                    let key = Object.keys(COL_MAP).find(k => COL_MAP[k] === h);
+                    let val = row[key] !== undefined ? row[key] : '';
+                    return `<td contenteditable="true" data-idx="${idx}" data-key="${key}" onblur="syncCell(this)">${val}</td>`;
+                }).join('') + '</tr>';
+            }).join('');
+            updateStats(data.length);
+        }
 
-function finalizeShipping() {
-    const city = document.getElementById('shipCity').value;
-    const pallets = parseInt(document.getElementById('shipPallets').value) || 1;
-    if(!city) return addVoiceLog('Укажите город получения!', 'system');
-    
-    AppState.recentOps.unshift({
-        date: new Date().toLocaleDateString('ru-RU'),
-        type: `Отгрузка ${AppState.shipping.platform.toUpperCase()}`,
-        id: `#SH-${Math.floor(Math.random()*900)+100}`,
-        items: AppState.shipping.closedBoxes.reduce((a,b)=>a+b.items,0),
-        status: 'Формируется'
-    });
-    
-    addVoiceLog(`Отгрузка в ${city} оформлена! ${AppState.shipping.closedBoxes.length} коробов, ${pallets} палетов. Документы готовы к печати.`, 'ai');
-    AppState.shipping.closedBoxes = [];
-    AppState.shipping.currentBox = { num: 1, items: 0, capacity: 50, closed: false };
-    updateBoxUI();
-    document.getElementById('qrContainer').classList.add('hidden');
-    document.getElementById('boxHistoryTable').innerHTML = '';
-    document.getElementById('summaryBoxes').textContent = 0;
-    document.getElementById('summaryItems').textContent = 0;
-}
+        function syncCell(td) {
+            const idx = parseInt(td.dataset.idx);
+            const key = td.dataset.key;
+            rawData[idx][key] = td.textContent.trim();
+            applyFilters();
+        }
 
-// ================= INVENTORY LOGIC =================
-function startInventory() {
-    AppState.inventoryActive = true;
-    AppState.inventory = AppState.products.map(p => ({...p, actual: 0, diff: p.stock, status: 'Ожидает'}));
-    updateInvUI();
-    addVoiceLog('Инвентаризация запущена. Сканируйте товары и вводите фактический остаток.', 'ai');
-}
+        function applyFilters() {
+            const text = document.getElementById('filterText').value.toLowerCase().trim();
+            const minQty = parseFloat(document.getElementById('filterQty').value) || 0;
 
-function addInvItem() {
-    if(!AppState.inventoryActive) return addVoiceLog('Сначала начните инвентаризацию.', 'system');
-    const sku = document.getElementById('invScanInput').value.trim();
-    const count = parseInt(document.getElementById('invCountInput').value) || 0;
-    
-    const idx = AppState.inventory.findIndex(i => i.sku === sku);
-    if(idx === -1) return addVoiceLog('Товар не найден в базе ожидаемых.', 'system');
-    
-    AppState.inventory[idx].actual = count;
-    AppState.inventory[idx].diff = count - AppState.inventory[idx].expected;
-    AppState.inventory[idx].status = Math.abs(AppState.inventory[idx].diff) === 0 ? 'Сходится' : 'Расхождение';
-    
-    document.getElementById('invScanInput').value = '';
-    document.getElementById('invCountInput').value = '';
-    updateInvUI();
-    addVoiceLog(`Зафиксировано: ${AppState.inventory[idx].name}. Разница: ${AppState.inventory[idx].diff > 0 ? '+' : ''}${AppState.inventory[idx].diff}`, 'ai');
-}
+            filteredData = rawData.filter(r => {
+                let match = true;
+                if (text) {
+                    const searchStr = `${r.art_wb} ${r.art_label} ${r.sku_label} ${r.sku_orig} ${r.name} ${r.tz}`.toLowerCase();
+                    match = match && searchStr.includes(text);
+                }
+                if (minQty > 0) match = match && parseQty(r.qty_ship) >= minQty;
+                return match;
+            });
+            renderTable(filteredData);
+        }
 
-function updateInvUI() {
-    const tbody = document.getElementById('invTable');
-    tbody.innerHTML = AppState.inventory.map(i => `
-        <tr class="border-b border-slate-100"><td class="p-3">${i.sku}</td><td class="p-3">${i.name}</td><td class="p-3">${i.expected}</td><td class="p-3">${i.actual}</td>
-        <td class="p-3 ${i.diff<0?'text-rose-600 font-bold':i.diff>0?'text-emerald-600 font-bold':''}">${i.diff > 0 ? '+' : ''}${i.diff}</td>
-        <td class="p-3"><span class="px-2 py-1 rounded text-xs ${i.status==='Сходится'?'bg-emerald-100 text-emerald-700':'bg-amber-100 text-amber-700'}">${i.status}</span></td></tr>
-    `).join('');
-    
-    document.getElementById('invExpected').textContent = AppState.inventory.reduce((a,b)=>a+b.expected, 0);
-    document.getElementById('invActual').textContent = AppState.inventory.reduce((a,b)=>a+b.actual, 0);
-    document.getElementById('invDiff').textContent = document.getElementById('invActual').textContent - document.getElementById('invExpected').textContent;
-    const done = AppState.inventory.filter(i => i.status !== 'Ожидает').length;
-    document.getElementById('invProgress').textContent = `${Math.round((done/AppState.inventory.length)*100)}%`;
-}
+        function resetFilters() {
+            document.getElementById('filterText').value = '';
+            document.getElementById('filterQty').value = '';
+            renderTable(rawData);
+        }
 
-// ================= FINES LOGIC =================
-function renderFines() {
-    const tbody = document.getElementById('finesTable');
-    tbody.innerHTML = AppState.fines.map(f => `
-        <tr class="border-b border-slate-100"><td class="p-3">${f.date}</td><td class="p-3">${f.staff}</td><td class="p-3">${f.type}</td><td class="p-3">${f.reason}</td><td class="p-3 font-semibold">${f.amount}₽</td><td class="p-3 text-xs text-slate-500">${f.prevention}</td><td class="p-3"><button class="text-indigo-600 hover:underline">Подробнее</button></td></tr>
-    `).join('');
-}
+        function updateStats(count) {
+            document.getElementById('statsTotal').textContent = `Всего: ${rawData.length}`;
+            document.getElementById('statsFiltered').textContent = `Показано: ${count}`;
+        }
 
-function addFine() {
-    const newFine = { date: new Date().toLocaleDateString('ru-RU'), staff: 'Не назначен', type: 'Новое нарушение', reason: 'Ожидает уточнения', amount: 0, prevention: 'Следуйте регламенту', status: 'В ожидании' };
-    AppState.fines.unshift(newFine);
-    renderFines();
-    addVoiceLog('Создан новый штраф. Заполните данные в таблице.', 'ai');
-}
+        function generateLabels() {
+            const grid = document.getElementById('labelGrid');
+            grid.innerHTML = '';
+            const data = filteredData.length ? filteredData : rawData;
+            if (!data.length) return alert('Нет данных для печати. Загрузите файл или примените фильтры.');
 
-// ================= VOICE ASSISTANT =================
-function toggleVoiceUI() {
-    const panel = document.getElementById('voicePanel');
-    if (panel.classList.contains('opacity-0')) {
-        panel.classList.remove('opacity-0', 'translate-y-10');
-    } else {
-        panel.classList.add('opacity-0', 'translate-y-10');
-    }
-}
+            let labelCount = 0;
+            data.forEach(row => {
+                const qty = parseQty(row.qty_ship);
+                if (qty <= 0) return;
 
-function addVoiceLog(msg, sender) {
-    const log = document.getElementById('voiceLog');
-    const div = document.createElement('div');
-    div.className = sender === 'ai' ? 'bg-indigo-100 text-indigo-800 p-2 rounded-lg rounded-bl-none' : 'bg-white border border-slate-200 p-2 rounded-lg rounded-tr-none';
-    div.textContent = msg;
-    log.appendChild(div);
-    log.scrollTop = log.scrollHeight;
-}
+                for (let i = 0; i < qty; i++) {
+                    const id = `lbl_${Date.now()}_${i}`;
+                    const sku = row.sku_label || row.sku_orig || 'Н/Д';
+                    const art = row.art_label || row.art_wb || 'Н/Д';
+                    const exp = row.expiry || '—';
+                    const name = row.name || '';
+                    const tzShort = row.tz ? row.tz.substring(0, 80) + (row.tz.length > 80 ? '...' : '') : '';
 
-function startVoice() {
-    if (!('webkitSpeechRecognition' in window)) return addVoiceLog('Ваш браузер не поддерживает голосовой ввод. Используйте текстовое поле.', 'system');
-    
-    const recognition = new webkitSpeechRecognition();
-    recognition.lang = 'ru-RU';
-    recognition.start();
-    addVoiceLog('Слушаю... Говорите чётко.', 'system');
-    
-    recognition.onresult = e => {
-        const text = e.results[0][0].transcript;
-        document.getElementById('voiceTextInput').value = text;
-        handleVoiceInput();
-    };
-    recognition.onerror = e => addVoiceLog('Ошибка распознавания. Попробуйте снова.', 'system');
-}
+                    const el = document.createElement('div');
+                    el.className = 'label';
+                    el.innerHTML = `
+                        <div class="header">
+                            <div class="sku">Арт: ${art}</div>
+                            <div style="font-size:11px;color:#666;">${qty > 1 ? `${i+1}/${qty}` : ''}</div>
+                        </div>
+                        <div class="barcode" id="${id}"></div>
+                        <div class="expiry">Годен до: ${exp}</div>
+                        <div class="name">${name}</div>
+                        ${tzShort ? `<div class="tz">📦 ${tzShort}</div>` : ''}
+                    `;
+                    grid.appendChild(el);
 
-function handleVoiceInput() {
-    const input = document.getElementById('voiceTextInput');
-    const text = input.value.trim().toLowerCase();
-    if (!text) return;
-    
-    addVoiceLog(input.value, 'user');
-    input.value = '';
-    
-    let response = '';
-    if (text.includes('статус отгрузки') || text.includes('сколько отгрузок')) {
-        response = `Сегодня оформлено ${AppState.shipping.closedBoxes.length} коробов. Режим: ${AppState.shipping.platform.toUpperCase()}.`;
-    } else if (text.includes('где товар') || text.includes('остаток')) {
-        const item = AppState.products.find(p => text.includes(p.name.toLowerCase()) || text.includes(p.sku));
-        response = item ? `Товар ${item.name}. Остаток: ${item.stock} шт.` : 'Не нашёл такой товар в базе. Уточните название или ШК.';
-    } else if (text.includes('штраф') || text.includes('как избежать')) {
-        response = 'Основные штрафы: пересорт, порча, нарушение SLA, потеря товара. Всегда сканируйте ШК дважды, используйте наполнители, следите за таймером сборки.';
-    } else if (text.includes('инвентаризация')) {
-        startInventory();
-        response = 'Инвентаризация запущена. Начинайте сканирование ячеек.';
-    } else if (text.includes('отгрузка озон') || text.includes('озон')) {
-        switchShipping('ozon');
-        response = 'Переключено на отгрузку ОЗОН. Максимум 30 коробов на палет. Готов к сканированию.';
-    } else if (text.includes('отгрузка вб') || text.includes('wb')) {
-        switchShipping('wb');
-        response = 'Переключено на отгрузку ВБ. Максимум 192 коробов на палет. Готов к сканированию.';
-    } else {
-        response = 'Я могу помочь с: "статус отгрузки", "где товар", "штрафы", "начать инвентаризацию", "отгрузка озон/вб".';
-    }
-    
-    addVoiceLog(response, 'ai');
-    
-    // TTS
-    const utterance = new SpeechSynthesisUtterance(response);
-    utterance.lang = 'ru-RU';
-    window.speechSynthesis.speak(utterance);
-}
+                    // Генерация штрихкода
+                    try { JsBarcode(`#${id}`, sku, { format: "CODE128", width: 1.5, height: 25, displayValue: true, fontSize: 10, margin: 0 }); } 
+                    catch(e) { document.getElementById(id).innerHTML = `<div style="font-size:12px;text-align:center;">ШК: ${sku}</div>`; }
+                    
+                    labelCount++;
+                }
+            });
+            document.getElementById('statsLabels').textContent = `Этикеток: ${labelCount}`;
+            setTimeout(() => window.print(), 300);
+        }
 
-document.getElementById('voiceToggle').addEventListener('click', toggleVoiceUI);
-document.addEventListener('DOMContentLoaded', () => {
-    renderFines();
-    updateDashboard();
-});
-</script>
+        function exportCSV() {
+            const data = filteredData.length ? filteredData : rawData;
+            let csv = headerRow.join(',') + '\n';
+            data.forEach(r => {
+                csv += Object.keys(COL_MAP).map(k => `"${(r[k]||'').replace(/"/g,'""')}"`).join(',') + '\n';
+            });
+            const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'Заказ_№47_Этикетки.csv';
+            link.click();
+        }
+    </script>
 </body>
 </html>
-
